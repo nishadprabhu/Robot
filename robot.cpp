@@ -116,11 +116,7 @@ void turn_left(int percent, float degrees) //using encoders
     right_motor.SetPercent(percent);
     left_motor.SetPercent(-1 * percent);
 
-    //<ADD CODE HERE>
-
     while((right_encoder.Counts() + left_encoder.Counts())/2 < counts);
-
-    //<ADD CODE HERE>
 
     //Turn off motors
     right_motor.Stop();
@@ -135,19 +131,15 @@ void turn_right(int percent, float degrees) //using encoders
     right_motor.SetPercent(-1 * percent);
     left_motor.SetPercent(percent);
 
-    //<ADD CODE HERE>
-
     while((right_encoder.Counts() + left_encoder.Counts())/2 < counts);
 
-    //<ADD CODE HERE>
 
     //Turn off motors
     right_motor.Stop();
     left_motor.Stop();
 }
+//Runs through performance test 1
 void performance1() {
-    while(!buttons.MiddlePressed()); //Wait for middle button to be pressed
-    while(buttons.MiddlePressed()); //Wait for middle button to be unpressed
 
     Sleep(2.0); //Wait for counts to stabilize
     move_forward(30, 21);
@@ -172,27 +164,11 @@ void performance1() {
 
 int main(void)
 {
-    int motor_percent = 70; //Input power level here
-    int expected_counts = 215; //Input theoretical counts here
 
-    //Initialize the screen (GO BUCKS!)
-    LCD.Clear( FEHLCD::Scarlet );
-    LCD.SetFontColor( FEHLCD::Gray );
-
-    LCD.WriteLine("Shaft Encoder Lab Test");
-    LCD.WriteLine("Press middle button");
     while(!buttons.MiddlePressed()); //Wait for middle button to be pressed
     while(buttons.MiddlePressed()); //Wait for middle button to be unpressed
     performance1();
 
-    LCD.Write("Theoretical Counts: ");
-    LCD.WriteLine(expected_counts);
-    LCD.Write("Motor Percent: ");
-    LCD.WriteLine(motor_percent);
-    LCD.Write("Actual LE Counts: ");
-    LCD.WriteLine(left_encoder.Counts());
-    LCD.Write("Actual RE Counts: ");
-    LCD.WriteLine(right_encoder.Counts());
 
     return 0;
 }
