@@ -14,8 +14,8 @@
 #define FAR_RIGHT 2
 #define OFF_LINE 4
 //Defining constants to convert counts to inches or degrees
-#define COUNTS_PER_INCH 40.5
-#define COUNTS_PER_DEGREE 2.389
+#define COUNTS_PER_INCH 33.74
+#define COUNTS_PER_DEGREE 1.99
 //Declarations for encoders & motors
 ButtonBoard buttons(FEHIO::Bank3);
 DigitalEncoder right_encoder(FEHIO::P0_0);
