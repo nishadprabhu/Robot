@@ -16,16 +16,17 @@
 //Defining constants to convert counts to inches or degrees
 #define COUNTS_PER_INCH 33.74
 #define LEFT_COUNTS_PER_DEGREE 1.99
-#define RIGHT_COUNTS_PER_DEGREE 1.87
+#define RIGHT_COUNTS_PER_DEGREE 1.97
 //Define thresholds for line following/start light
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
 //Tuning constant
-#define TUNING_CONSTANT 0.0703
+#define TUNING_CONSTANT 0.0704
+#define BACKWARDS_TUNING_CONSTANT 0.073
 //Declarations for encoders & motors
 ButtonBoard buttons(FEHIO::Bank3);
-DigitalEncoder right_encoder(FEHIO::P0_1);
-DigitalEncoder left_encoder(FEHIO::P0_0);
+DigitalEncoder right_encoder(FEHIO::P0_2);
+DigitalEncoder left_encoder(FEHIO::P0_3);
 FEHMotor right_motor(FEHMotor::Motor0,12.0);
 FEHMotor left_motor(FEHMotor::Motor1,12.0);
 
@@ -67,12 +68,15 @@ void move_backwards(int percent, float inches) //using encoders
     left_encoder.ResetCounts();
     float counts = inches*COUNTS_PER_INCH;
     //Set both motors to desired percent
-    right_motor.SetPercent(-1*percent);
+    right_motor.SetPercent((-1*percent)-3);
     left_motor.SetPercent(-1*percent);
-
+    int mp = -1 * percent;
     //While the average of the left and right encoder are less than counts,
     //keep running motors
-    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts);
+    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
+        //mp = (-1 * percent) - (BACKWARDS_TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts()));
+       // right_motor.SetPercent(mp);
+    }
 
     //Turn off motors
     right_motor.Stop();
@@ -164,7 +168,6 @@ void turn_left(int percent, float degrees) //using encoders
     float counts = degrees * LEFT_COUNTS_PER_DEGREE;
     right_motor.SetPercent(percent);
     left_motor.SetPercent(-1 * percent);
-    int mp = percent;
     while((right_encoder.Counts() + left_encoder.Counts())/2. < counts);
 
     //Turn off motors
@@ -185,19 +188,7 @@ void turn_right(int percent, float degrees) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
-void turn(int percent, int counts) {
-    //Reset encoder counts
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
-    right_motor.SetPercent(-1 * percent);
-    left_motor.SetPercent(percent);
 
-    while((right_encoder.Counts() + left_encoder.Counts())/2 < counts);
-
-    //Turn off motors
-    right_motor.Stop();
-    left_motor.Stop();
-}
 
 void waitForStart() {
     while(!buttons.MiddlePressed()); //Wait for middle button to be pressed
@@ -215,7 +206,7 @@ int getLightColor() {
     }
 }
 bool detectingLight() {
-    return (cds.Value() < 2.75);
+    return (cds.Value() < 2);
 }
 
 void performance1() {
@@ -250,19 +241,23 @@ void performance1() {
             LCD.WriteLine("Red");
         }
         else {
-            //LCD.WriteLine("Red");
+            LCD.WriteLine("Red");
         }
     }
 
     else {
-       // LCD.WriteLine("Red");
+        LCD.WriteLine("Red");
     }
 }
 
 int main(void)
 {
-    waitForStart();
-    performance1();
+    //waitForStart();
+    //performance1();
+    int percent = 30;
+    move_backwards(40,30);
+
+
 
 
 
