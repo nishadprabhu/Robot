@@ -4,7 +4,7 @@
 #include <FEHUtility.h>
 #include <FEHMotor.h>
 #include <FEHRPS.h>
-
+#include <math.h>
 //Defining states for following lines
 #define ON_LINE 1.9
 #define CENTER 0
@@ -22,6 +22,9 @@
 #define BLUE_LIGHT_ON 1
 //Tuning constant
 #define TUNING_CONSTANT 0.0703
+//PI
+#define PI 3.14159265
+
 //Declarations for encoders & motors
 ButtonBoard buttons(FEHIO::Bank3);
 DigitalEncoder right_encoder(FEHIO::P0_1);
@@ -60,6 +63,32 @@ void move_forward(int percent, float inches) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
+void accel_forward(int percent, float inches) //using encoders
+{
+    //Reset encoder counts
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+    float counts = inches*COUNTS_PER_INCH;
+    //Set both motors to desired percent
+    int mp = 1;
+    right_motor.SetPercent(mp);
+    left_motor.SetPercent(mp);
+    
+
+    //While the average of the left and right encoder are less than counts,
+    //keep running motors
+    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
+        while(mp<percent) {
+            mp++;
+            right_motor.SetPercent(mp);
+            left_motor.SetPercent(mp);
+        }
+    }
+
+    //Turn off motors
+    right_motor.Stop();
+    left_motor.Stop();
+}
 void move_backwards(int percent, float inches) //using encoders
 {
     //Reset encoder counts
@@ -73,6 +102,33 @@ void move_backwards(int percent, float inches) //using encoders
     //While the average of the left and right encoder are less than counts,
     //keep running motors
     while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts);
+
+    //Turn off motors
+    right_motor.Stop();
+    left_motor.Stop();
+}
+void accel_backwards(int percent, float inches) //using encoders
+{
+    //Reset encoder counts
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+    float counts = inches*COUNTS_PER_INCH;
+    //Set both motors to desired percent
+    int mp = -1;
+    percent *=-1;
+    right_motor.SetPercent(mp);
+    left_motor.SetPercent(mp);
+    
+
+    //While the average of the left and right encoder are less than counts,
+    //keep running motors
+    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
+        while(mp>percent) {
+            mp--;
+            right_motor.SetPercent(mp);
+            left_motor.SetPercent(mp);
+        }
+    }
 
     //Turn off motors
     right_motor.Stop();
@@ -185,21 +241,79 @@ void turn_right(int percent, float degrees) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
-void turn(int percent, int counts) {
-    //Reset encoder counts
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
-    right_motor.SetPercent(-1 * percent);
-    left_motor.SetPercent(percent);
-
-    while((right_encoder.Counts() + left_encoder.Counts())/2 < counts);
-
-    //Turn off motors
-    right_motor.Stop();
-    left_motor.Stop();
+void faceLocation(float x, float y) {
+    float robotX = RPS.X();
+    float robotY = RPS.Y();
+    double deltaX = x - robotX;
+    double deltaY = y - robotY;
+    double degree;
+    if(deltaX == 0) {
+        if(deltaY > 0) {
+            degree = 90;
+        }
+        else if (deltaY < 0) {
+            degree = 270;
+        }
+        else {
+            LCD.WriteLine("In Location");
+            return;
+        }
+    }
+    else if (deltaX > 0) {
+        degree = atan(deltaY/deltaX) * 180/PI;
+        if(deltaY < 0) {
+            degree = 360 + degree;
+        }
+        
+    }
+    else if (deltaX < 0) {
+        degree = atan(deltaY/deltaX) * 180/PI + 180;
+    }
+    
+    float heading = RPS.Heading();
+    float deltaTheta = angleBetween(heading, degree)
+    while(abs(deltaTheta) > 0) {
+        deltaTheta = angleBetween(RPS.Heading(), degree);
+        float headingToZero = 0;
+        float degreeToZero = degree-RPS.Heading();
+        if(degree < 0) {
+            degree = 360 + degree;
+        }
+        if(degree > 180) {
+            turn_right(30,1);
+            
+        }
+        else {
+            turn_left(30,1);
+        }
+        Sleep(0.01);
+    }
+}
+void moveTo(float x, float y) {
+  faceLocation(x,y);
+  float deltaX = x - RPS.X(), deltaY = y - RPS.Y();
+  while(abs(deltaX) > 0 && abs(deltaY) > 0){
+      accel_forward(30, 1);
+      Sleep(0.01);
+  }
 }
 
+float angleBetween(float degree1, float degree2) {
+    //convert degrees into vectors with length 1
+    vect1x = cos(degree1);
+    vect1y = sin(degree1);
+    vect2x = cos(degree2);
+    vect2y = sin(degree2);
+    //get lengths of vectors
+    vect1L = sqrt(vect1x*vect1x + vect1y*vect1y);
+    vect2L = sqrt(vect2x*vect2x + vect2y*vect2y);
+    //get dot product of vectors
+    float dot = vect1x*vect2x + vect1y*vect2y;
+    //use dot product definition to get angle between
+    return acos(dot/(vect1L*vect2L);
+}
 void waitForStart() {
+    RPS.InitializeTouchMenu();
     while(!buttons.MiddlePressed()); //Wait for middle button to be pressed
     while(buttons.MiddlePressed()); //Wait for middle button to be unpressed
     LCD.Clear();
