@@ -304,13 +304,10 @@ float angleBetween(float degree1, float degree2) {
     vect1y = sin(degree1);
     vect2x = cos(degree2);
     vect2y = sin(degree2);
-    //get lengths of vectors
-    vect1L = sqrt(vect1x*vect1x + vect1y*vect1y);
-    vect2L = sqrt(vect2x*vect2x + vect2y*vect2y);
     //get dot product of vectors
     float dot = vect1x*vect2x + vect1y*vect2y;
     //use dot product definition to get angle between
-    return acos(dot/(vect1L*vect2L);
+    return acos(dot);
 }
 void waitForStart() {
     RPS.InitializeTouchMenu();
