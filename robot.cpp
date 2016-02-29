@@ -276,6 +276,9 @@ void faceLocation(float x, float y) {
         deltaTheta = angleBetween(RPS.Heading(), degree);
         float headingToZero = 0;
         float degreeToZero = degree-RPS.Heading();
+        if(degreeToZero < 0) {
+            degreeToZero += 360;
+        }
         if(degree < 0) {
             degree = 360 + degree;
         }
@@ -286,7 +289,7 @@ void faceLocation(float x, float y) {
         else {
             turn_left(30,1);
         }
-        Sleep(0.01);
+        Sleep(100);
     }
 }
 void moveTo(float x, float y) {
