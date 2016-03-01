@@ -4,7 +4,7 @@
 /**
  * This is a class which holds the X and Y coordinates for all locations of interest on the 2016 FEH Robot course.
  */
-class Robot
+class Location
 {
 	public:
 		static const float SUPPLIES_X = x;
