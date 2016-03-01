@@ -442,7 +442,7 @@ void waitForStart() {
     while(!buttons.MiddlePressed()); //Wait for middle button to be pressed
     while(buttons.MiddlePressed()); //Wait for middle button to be unpressed
     LCD.Clear();
-    while(cds.Value() > START_LIGHT_ON);
+   // while(cds.Value() > START_LIGHT_ON);
 }
 //returns 1 if light is BLUE, RED if otherwise
 int getLightColor() {
@@ -497,11 +497,43 @@ void performance1() {
        // LCD.WriteLine("Red");
     }
 }
-
+void performance2() {
+    moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
+    goUpSideRamp();
+    moveTo(Location::LEFT_SWITCH_X,  Location::LEFT_SWITCH_Y);
+    //pull switch
+    moveTo(Location::MID_SWITCH_X,  Location::MID_SWITCH_Y);
+    //pull switch
+    moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
+    accel_forward(3,10);
+}
+void goUpSideRamp() {
+    //Assuming facing ramp already
+    driveToWall(20);
+    Sleep(500);
+    move_backwards(20, 1);
+    Sleep(500);
+    turn_left(20, 90);
+    Sleep(500);
+    driveToWall(30);
+    Sleep(500);
+    move_backwards(20,0.5);
+    Sleep(500);
+    turn_left(20, 90);
+    Sleep(500);
+    while(RPS.X() < 0) {
+        left_motor.SetPercent(30);
+        right_motor.SetPercent(30);
+    }
+    right_motor.Stop();
+    left_motor.Stop();
+    //end with robot facing left
+    faceDegree(180);
+}
 int main(void)
 {
     waitForStart();
-    performance1();
+    performance2();
 
 
 
