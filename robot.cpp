@@ -80,8 +80,12 @@ void accel_forward(int percent, float inches) //using encoders
     while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
         while(mp<percent) {
             mp++;
-            right_motor.SetPercent(mp);
+            right_motor.SetPercent(mp+1);
             left_motor.SetPercent(mp);
+            
+        }
+        if((left_encoder.Counts() + right_encoder.Counts())/2. > counts*.75) {
+            right_motor.SetPercent(percent * .5);
         }
     }
 
@@ -241,6 +245,7 @@ void turn_right(int percent, float degrees) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
+/*
 void faceLocation(float x, float y) {
     float robotX = RPS.X();
     float robotY = RPS.Y();
@@ -300,7 +305,7 @@ void moveTo(float x, float y) {
       Sleep(0.01);
   }
 }
-
+*/
 float angleBetween(float degree1, float degree2) {
     //convert degrees into vectors with length 1
     vect1x = cos(degree1);
@@ -311,6 +316,126 @@ float angleBetween(float degree1, float degree2) {
     float dot = vect1x*vect2x + vect1y*vect2y;
     //use dot product definition to get angle between
     return acos(dot);
+}
+void check_x_plus(float x_coordinate) //using RPS while robot is in the +x direction
+{
+    //check whether the robot is within an acceptable range
+    while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
+    {
+        if(RPS.X() > x_coordinate)
+        {
+            accel_backwards(10,1);
+        }
+        else if(RPS.X() < x_coordinate)
+        {
+            //pulse the motors for a short duration in the correct direction
+            accel_forwards(10,1);
+        }
+    }
+}
+void check_x_minus(float x_coordinate) //using RPS while robot is in the +x direction
+{
+    //check whether the robot is within an acceptable range
+    while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
+    {
+        if(RPS.X() > x_coordinate)
+        {
+            accel_forwards(10,1);
+        }
+        else if(RPS.X() < x_coordinate)
+        {
+            //pulse the motors for a short duration in the correct direction
+            accel_backwards(10,1);
+        }
+    }
+}
+void check_y_minus(float y_coordinate) //using RPS while robot is in the -y direction
+{
+    //check whether the robot is within an acceptable range
+    while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
+    {
+        if(RPS.Y() > y_coordinate)
+        {
+            accel_forwards(10,1);
+        }
+        else if(RPS.Y() < y_coordinate)
+        {
+            //pulse the motors for a short duration in the correct direction
+
+            accel_backwards(10,1);
+        }
+    }
+}
+
+void check_y_plus(float y_coordinate) //using RPS while robot is in the +y direction
+{
+    //check whether the robot is within an acceptable range
+    while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
+    {
+        if(RPS.Y() > y_coordinate)
+        {
+            accel_backwards(10,1);
+        }
+        else if(RPS.Y() < y_coordinate)
+        {
+            //pulse the motors for a short duration in the correct direction
+
+            accel_forwards(10,1);
+        }
+    }
+}
+void moveTo(float x, float y) {
+    float robotX = RPS.X();
+    float robotY = RPS.Y();
+    double deltaX = x - robotX;
+    double deltaY = y - robotY;
+    if(deltaX >=0 && deltaY >= 0) {
+        faceDegree(0);
+        check_x_plus(x);
+        faceDegree(90);
+        check_y_plus(y);
+    }
+    else if(deltaX <= 0 && deltaY >= 0 ) {
+        faceDegree(180);
+        check_x_minus(x);
+        faceDegree(90);
+        check_y_plus(y);
+    }
+    else if(deltaX <= 0 && deltaY <= 0 ) {
+        faceDegree(180);
+        check_x_minus(x);
+        faceDegree(270);
+        check_y_minus(y);
+    }
+    else if(deltaX >= 0 && deltaY <= 0 ) {
+        faceDegree(0);
+        check_x_plus(x);
+        faceDegree(270);
+        check_y_minus(y);
+    }
+}
+void faceDegree(float degree) {
+    float headingToZero = 0;
+    float degreeToZero = degree - RPS.Heading();
+    if(degreeToZero < 0) {
+        degreeToZero+=360;
+    }
+    float deltaTheta = angleBetween(headingToZero, degreeToZero);
+    while(deltaTheta > 1) {
+        headingToZero = 0;
+        degreeToZero = degree-RPS.Heading();
+        if(degreeToZero < 0) {
+            degreeToZero+=360;
+        }
+        deltaTheta = angleBetween(headingToZero, degreeToZero);
+        if(degreeToZero > 180) {
+            turn_right(20,1);
+        }
+        else {
+            turn_left(20,1)
+        }
+        Sleep(50);
+    }
 }
 void waitForStart() {
     RPS.InitializeTouchMenu();
