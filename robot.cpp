@@ -21,7 +21,7 @@
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
 //Tuning constant
-#define TUNING_CONSTANT 0.0703
+#define TUNING_CONSTANT 0.07
 //PI
 #define PI 3.14159265
 
@@ -73,7 +73,7 @@ void accel_forward(int percent, float inches) //using encoders
     int mp = 1;
     right_motor.SetPercent(mp);
     left_motor.SetPercent(mp);
-    
+
 
     //While the average of the left and right encoder are less than counts,
     //keep running motors
@@ -82,11 +82,14 @@ void accel_forward(int percent, float inches) //using encoders
             mp++;
             right_motor.SetPercent(mp+1);
             left_motor.SetPercent(mp);
-            
+            Sleep(20);
+
         }
-        if((left_encoder.Counts() + right_encoder.Counts())/2. > counts*.75) {
-            right_motor.SetPercent(percent * .5);
-        }
+        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+percent;
+        right_motor.SetPercent(mp);
+//        if((left_encoder.Counts() + right_encoder.Counts())/2. > counts*.75) {
+//            right_motor.SetPercent(percent * .5);
+//        }
     }
 
     //Turn off motors
@@ -122,7 +125,7 @@ void accel_backwards(int percent, float inches) //using encoders
     percent *=-1;
     right_motor.SetPercent(mp);
     left_motor.SetPercent(mp);
-    
+
 
     //While the average of the left and right encoder are less than counts,
     //keep running motors
@@ -269,12 +272,12 @@ void faceLocation(float x, float y) {
         if(deltaY < 0) {
             degree = 360 + degree;
         }
-        
+
     }
     else if (deltaX < 0) {
         degree = atan(deltaY/deltaX) * 180/PI + 180;
     }
-    
+
     float heading = RPS.Heading();
     float deltaTheta = angleBetween(heading, degree)
     while(abs(deltaTheta) > 0) {
@@ -289,7 +292,7 @@ void faceLocation(float x, float y) {
         }
         if(degree > 180) {
             turn_right(30,1);
-            
+
         }
         else {
             turn_left(30,1);
@@ -307,11 +310,10 @@ void moveTo(float x, float y) {
 }
 */
 float angleBetween(float degree1, float degree2) {
-    //convert degrees into vectors with length 1
-    vect1x = cos(degree1);
-    vect1y = sin(degree1);
-    vect2x = cos(degree2);
-    vect2y = sin(degree2);
+    float vect1x = cos(degree1);
+    float vect1y = sin(degree1);
+    float vect2x = cos(degree2);
+    float vect2y = sin(degree2);
     //get dot product of vectors
     float dot = vect1x*vect2x + vect1y*vect2y;
     //use dot product definition to get angle between
@@ -329,7 +331,7 @@ void check_x_plus(float x_coordinate) //using RPS while robot is in the +x direc
         else if(RPS.X() < x_coordinate)
         {
             //pulse the motors for a short duration in the correct direction
-            accel_forwards(10,1);
+            accel_forward(10,1);
         }
     }
 }
@@ -340,7 +342,7 @@ void check_x_minus(float x_coordinate) //using RPS while robot is in the +x dire
     {
         if(RPS.X() > x_coordinate)
         {
-            accel_forwards(10,1);
+            accel_forward(10,1);
         }
         else if(RPS.X() < x_coordinate)
         {
@@ -356,7 +358,7 @@ void check_y_minus(float y_coordinate) //using RPS while robot is in the -y dire
     {
         if(RPS.Y() > y_coordinate)
         {
-            accel_forwards(10,1);
+            accel_forward(10,1);
         }
         else if(RPS.Y() < y_coordinate)
         {
@@ -380,8 +382,31 @@ void check_y_plus(float y_coordinate) //using RPS while robot is in the +y direc
         {
             //pulse the motors for a short duration in the correct direction
 
-            accel_forwards(10,1);
+            accel_forward(10,1);
         }
+    }
+}
+void faceDegree(float degree) {
+    float headingToZero = 0;
+    float degreeToZero = degree - RPS.Heading();
+    if(degreeToZero < 0) {
+        degreeToZero+=360;
+    }
+    float deltaTheta = angleBetween(headingToZero, degreeToZero);
+    while(deltaTheta > 1) {
+        headingToZero = 0;
+        degreeToZero = degree-RPS.Heading();
+        if(degreeToZero < 0) {
+            degreeToZero+=360;
+        }
+        deltaTheta = angleBetween(headingToZero, degreeToZero);
+        if(degreeToZero > 180) {
+            turn_right(10,1);
+        }
+        else {
+            turn_left(10,1);
+        }
+
     }
 }
 void moveTo(float x, float y) {
@@ -414,29 +439,7 @@ void moveTo(float x, float y) {
         check_y_minus(y);
     }
 }
-void faceDegree(float degree) {
-    float headingToZero = 0;
-    float degreeToZero = degree - RPS.Heading();
-    if(degreeToZero < 0) {
-        degreeToZero+=360;
-    }
-    float deltaTheta = angleBetween(headingToZero, degreeToZero);
-    while(deltaTheta > 1) {
-        headingToZero = 0;
-        degreeToZero = degree-RPS.Heading();
-        if(degreeToZero < 0) {
-            degreeToZero+=360;
-        }
-        deltaTheta = angleBetween(headingToZero, degreeToZero);
-        if(degreeToZero > 180) {
-            turn_right(20,1);
-        }
-        else {
-            turn_left(20,1)
-        }
-        Sleep(50);
-    }
-}
+
 void waitForStart() {
     RPS.InitializeTouchMenu();
     while(!buttons.MiddlePressed()); //Wait for middle button to be pressed
@@ -500,15 +503,16 @@ void performance1() {
 void performance2() {
     moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
     goUpSideRamp();
-    moveTo(Location::LEFT_SWITCH_X,  Location::LEFT_SWITCH_Y);
-    //pull switch
     moveTo(Location::MID_SWITCH_X,  Location::MID_SWITCH_Y);
     //pull switch
+    faceDegree(225);
+    //push switch
     moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
     accel_forward(3,10);
 }
 void goUpSideRamp() {
-    //Assuming facing ramp already
+    faceDegree(0);
+    Sleep(500);
     driveToWall(20);
     Sleep(500);
     move_backwards(20, 1);
@@ -533,7 +537,7 @@ void goUpSideRamp() {
 int main(void)
 {
     waitForStart();
-    performance2();
+    //performance2();
 
 
 
