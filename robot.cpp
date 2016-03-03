@@ -23,7 +23,7 @@
 //Tuning constant
 #define TUNING_CONSTANT 0.07
 //PI
-#define PI 3.14159265
+# define M_PI           3.14159265358979323846
 
 //Declarations for encoders & motors
 ButtonBoard buttons(FEHIO::Bank3);
@@ -310,14 +310,14 @@ void moveTo(float x, float y) {
 }
 */
 float angleBetween(float degree1, float degree2) {
-    float vect1x = cos(degree1);
-    float vect1y = sin(degree1);
-    float vect2x = cos(degree2);
-    float vect2y = sin(degree2);
+    float vect1x = cos(degree1 * M_PI/180);
+    float vect1y = sin(degree1 * M_PI/180);
+    float vect2x = cos(degree2 * M_PI/180);
+    float vect2y = sin(degree2 * M_PI/180);
     //get dot product of vectors
     float dot = vect1x*vect2x + vect1y*vect2y;
     //use dot product definition to get angle between
-    return acos(dot);
+    return acos(dot) * 180/M_PI;
 }
 void check_x_plus(float x_coordinate) //using RPS while robot is in the +x direction
 {
@@ -401,10 +401,10 @@ void faceDegree(float degree) {
         }
         deltaTheta = angleBetween(headingToZero, degreeToZero);
         if(degreeToZero > 180) {
-            turn_right(10,1);
+            turn_right(20,1);
         }
         else {
-            turn_left(10,1);
+            turn_left(20,1);
         }
 
     }
@@ -439,6 +439,7 @@ void moveTo(float x, float y) {
         check_y_minus(y);
     }
 }
+
 
 void waitForStart() {
     RPS.InitializeTouchMenu();
