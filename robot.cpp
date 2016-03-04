@@ -1,3 +1,4 @@
+
 //Including FEH libraries
 #include <FEHLCD.h>
 #include <FEHIO.h>
@@ -5,6 +6,7 @@
 #include <FEHMotor.h>
 #include <FEHRPS.h>
 #include <math.h>
+#include <FEHServo.h>
 #include "locations.h"
 //Defining states for following lines
 #define ON_LINE 1.9
@@ -22,7 +24,7 @@
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
 //Tuning constant
-#define TUNING_CONSTANT 0.072
+#define TUNING_CONSTANT 0.074
 //PI
 # define M_PI           3.14159265358979323846
 
@@ -32,6 +34,7 @@ DigitalEncoder right_encoder(FEHIO::P0_1);
 DigitalEncoder left_encoder(FEHIO::P0_0);
 FEHMotor right_motor(FEHMotor::Motor1,12.0);
 FEHMotor left_motor(FEHMotor::Motor3,12.0);
+FEHServo arm(FEHServo::Servo0);
 
 AnalogInputPin right(FEHIO::P1_2);
 AnalogInputPin middle(FEHIO::P1_4);
@@ -49,7 +52,7 @@ void move_forward(int percent, float inches) //using encoders
     left_encoder.ResetCounts();
     float counts = inches*COUNTS_PER_INCH;
     //Set both motors to desired percent
-    right_motor.SetPercent(percent+3);
+    right_motor.SetPercent(percent+2);
     left_motor.SetPercent(percent);
     int mp = percent;
 
@@ -59,6 +62,26 @@ void move_forward(int percent, float inches) //using encoders
         mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+percent;
         right_motor.SetPercent(mp);
     }
+
+    //Turn off motors
+    right_motor.Stop();
+    left_motor.Stop();
+}
+void move_forward_timed(int percent, int time) //using encoders
+{
+    //Reset encoder counts
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+
+    //Set both motors to desired percent
+    right_motor.SetPercent(percent+2);
+    left_motor.SetPercent(percent);
+    int mp = percent;
+
+    //While the average of the left and right encoder are less than counts,
+    //keep running motors
+    int start_time = TimeNow();
+    while(TimeNow() - start_time < time);
 
     //Turn off motors
     right_motor.Stop();
@@ -145,10 +168,8 @@ void accel_backwards(int percent, float inches) //using encoders
 //Drives either forwards or backwards until it hits a wall.
 void driveToWall(int percent) {
 
-    right_motor.SetPercent(percent+2);
+    right_motor.SetPercent(percent+4);
     left_motor.SetPercent(percent);
-    LCD.WriteLine(frontLeftBump.Value());
-    LCD.WriteLine(frontRightBump.Value());
     int mp = percent;
     while(frontLeftBump.Value() || frontRightBump.Value()) {
         mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+percent;
@@ -472,25 +493,6 @@ bool detectingLight() {
     return (cds.Value() < 2.75);
 }
 
-void setServo() {
-    arm.SetMin(761);
-    arm.SetMax(2372);
-}
-
-void pullSwitch() {
-    driveToWall(0.5);
-    arm.SetDegree(60);
-    move_backwards(4,0.5);
-    arm.SetDegree(100);
-}
-
-void pushSwitch() {
-    driveToWall(0.5);
-    move_backwards(5,0.5);
-    arm.SetDegree(30);
-    move_forward(3,0.5);
-}
-
 void performance1() {
 
     Sleep(2.0); //Wait for counts to stabilize
@@ -531,6 +533,33 @@ void performance1() {
        // LCD.WriteLine("Red");
     }
 }
+void setServo() {
+    arm.SetMin(818);
+    arm.SetMax(2355);
+}
+
+void pullSwitch() {
+    driveToWall(20);
+    move_backwards(10, 2.7);
+    arm.SetDegree(25);
+    Sleep(2.0);
+    move_backwards(10, 1);
+    Sleep(2.0);
+    arm.SetDegree(120);
+
+}
+
+void pushSwitch() {
+    driveToWall(20);
+    move_backwards(10, 4);
+
+    arm.SetDegree(25);
+    Sleep(2.0);
+    move_forward_timed(10,1);
+    Sleep(500);
+    arm.SetDegree(120);
+}
+
 void goUpSideRamp() {
     faceDegree(0);
     Sleep(500);
@@ -551,27 +580,32 @@ void goUpSideRamp() {
     left_motor.Stop();
     //end with robot facing left
     faceDegree(180);
-    driveToWall(20);
-    move_backwards(10, 2);
-    turn_left(10, 90);
-    driveToWall(20);
+//    driveToWall(20);
+//    move_backwards(10, 2);
+//    turn_left(10, 90);
+//    driveToWall(20);
 }
 void performance2() {
+    setServo();
+    arm.SetDegree(120);
+    move_forward(20, 3);
     moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
     goUpSideRamp();
-    moveTo(Location::MID_SWITCH_X, Location::MID_SWITCH_Y);
-    //pull switch
-    faceDegree(315);
-    //push switch
+    move_forward(20, 24);
+    turn_left(20, 90);
+    pullSwitch();
+    turn_left(20, 90);
+    move_forward(20,4);
+    turn_right(20, 90);
+    pushSwitch();
     moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
-    accel_forward(3,10);
+    move_forward_timed(10,2);
 }
 
 int main(void)
 {
     waitForStart();
     performance2();
-
 
 
 
