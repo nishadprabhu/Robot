@@ -365,6 +365,9 @@ float angleBetween(float degree1, float degree2) {
     return acos(dot) * 180/M_PI;
 }
 void faceDegree(float degree) {
+    if(RPS.Heading() < 0) {
+        return;
+    }
     float headingToZero = 0;
     float degreeToZero = degree - RPS.Heading();
     if(degreeToZero < 0) {
@@ -508,6 +511,7 @@ void moveTo(float x, float y) {
             turn_left(10, 90);
             move_forward(10, 1);
             turn_right(10, 90);
+            faceDegree(0);
             check = check_x_plus(x);
         }
         faceDegree(90);
@@ -516,6 +520,7 @@ void moveTo(float x, float y) {
             turn_right(10, 90);
             move_forward(10, 1);
             turn_left(10, 90);
+            faceDegree(90);
             check = check_y_plus(y);
         }
     }
@@ -526,6 +531,7 @@ void moveTo(float x, float y) {
             turn_right(10, 90);
             move_forward(10, 1);
             turn_left(10, 90);
+            faceDegree(180);
             check = check_x_plus(x);
         }
         faceDegree(90);
@@ -540,6 +546,7 @@ void moveTo(float x, float y) {
             turn_right(10, 90);
             move_forward(10, 1);
             turn_left(10, 90);
+            faceDegree(180);
             check = check_x_plus(x);
         }
     }
