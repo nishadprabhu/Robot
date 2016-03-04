@@ -472,6 +472,25 @@ bool detectingLight() {
     return (cds.Value() < 2.75);
 }
 
+void setServo() {
+    arm.SetMin(761);
+    arm.SetMax(2372);
+}
+
+void pullSwitch() {
+    driveToWall(0.5);
+    arm.SetDegree(60);
+    move_backwards(4,0.5);
+    arm.SetDegree(100);
+}
+
+void pushSwitch() {
+    driveToWall(0.5);
+    move_backwards(5,0.5);
+    arm.SetDegree(30);
+    move_forward(3,0.5);
+}
+
 void performance1() {
 
     Sleep(2.0); //Wait for counts to stabilize
