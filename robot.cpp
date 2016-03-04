@@ -1,4 +1,5 @@
 
+
 //Including FEH libraries
 #include <FEHLCD.h>
 #include <FEHIO.h>
@@ -379,19 +380,32 @@ void faceDegree(float degree) {
         }
         deltaTheta = angleBetween(headingToZero, degreeToZero);
         if(degreeToZero > 180) {
-            turn_right(10,0.5);
+            if(deltaTheta > 5) {
+                turn_right(20,1);
+            }
+            else {
+               turn_right(10,0.5);
+               Sleep(10);
+            }
+
         }
         else {
-            turn_left(10,0.5);
+            if(deltaTheta > 5) {
+                turn_left(20,1);
+            }
+            else {
+               turn_right(10,0.5);
+               Sleep(10);
+            }
         }
-        Sleep(10);
 
     }
 }
 
 
-void check_x_plus(float x_coordinate) //using RPS while robot is in the +x direction
+bool check_x_plus(float x_coordinate) //using RPS while robot is in the +x direction
 {
+    bool condition = true;
     //check whether the robot is within an acceptable range
     while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
     {
@@ -404,10 +418,17 @@ void check_x_plus(float x_coordinate) //using RPS while robot is in the +x direc
             //pulse the motors for a short duration in the correct direction
             move_forward(20,0.5);
         }
+        else if (RPS.X() < 0) {
+            condition = false;
+            break;
+        }
+
     }
+    return condition;
 }
-void check_x_minus(float x_coordinate) //using RPS while robot is in the +x direction
+bool check_x_minus(float x_coordinate) //using RPS while robot is in the +x direction
 {
+    bool condition = true;
     //check whether the robot is within an acceptable range
     while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
     {
@@ -421,16 +442,16 @@ void check_x_minus(float x_coordinate) //using RPS while robot is in the +x dire
             move_backwards(20,0.5);
         }
         else if(RPS.X() < 0) {
-            turn_left(20, 90);
-            driveToWall(20);
-            move_backwards(10, 2);
-            faceDegree(180);
+            condition = false;
+            break;
         }
 
     }
+    return condition;
 }
-void check_y_minus(float y_coordinate) //using RPS while robot is in the -y direction
+bool check_y_minus(float y_coordinate) //using RPS while robot is in the -y direction
 {
+    bool condition = true;
     //check whether the robot is within an acceptable range
     while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
     {
@@ -444,11 +465,17 @@ void check_y_minus(float y_coordinate) //using RPS while robot is in the -y dire
 
             move_backwards(20,0.5);
         }
+        else if(RPS.Y() < 0) {
+            condition = false;
+            break;
+        }
     }
+    return condition;
 }
 
-void check_y_plus(float y_coordinate) //using RPS while robot is in the +y direction
+bool check_y_plus(float y_coordinate) //using RPS while robot is in the +y direction
 {
+    bool condition = true;
     //check whether the robot is within an acceptable range
     while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
     {
@@ -462,7 +489,12 @@ void check_y_plus(float y_coordinate) //using RPS while robot is in the +y direc
 
             move_forward(20,1);
         }
+        else if(RPS.Y() < 0) {
+            condition = false;
+            break;
+        }
     }
+    return condition;
 }
 void moveTo(float x, float y) {
     float robotX = RPS.X();
@@ -471,27 +503,51 @@ void moveTo(float x, float y) {
     double deltaY = y - robotY;
     if(deltaX >=0 && deltaY >= 0) {
         faceDegree(0);
-        check_x_plus(x);
+        bool check = check_x_plus(x);
+        while(!check) {
+            turn_left(10, 90);
+            move_forward(10, 1);
+            turn_right(10, 90);
+            check = check_x_plus(x);
+        }
         faceDegree(90);
-        check_y_plus(y);
+        check = check_y_plus(y);
+        while(!check) {
+            turn_right(10, 90);
+            move_forward(10, 1);
+            turn_left(10, 90);
+            check = check_y_plus(y);
+        }
     }
     else if(deltaX <= 0 && deltaY >= 0 ) {
         faceDegree(180);
-        check_x_minus(x);
+        bool check = check_x_minus(x);
+        while(!check) {
+            turn_right(10, 90);
+            move_forward(10, 1);
+            turn_left(10, 90);
+            check = check_x_plus(x);
+        }
         faceDegree(90);
-        check_y_plus(y);
+        check = check_y_plus(y);
     }
     else if(deltaX <= 0 && deltaY <= 0 ) {
         faceDegree(270);
-        check_y_minus(y);
+        bool check = check_y_minus(y);
         faceDegree(180);
-        check_x_minus(x);
+        check = check_x_minus(x);
+        while(!check) {
+            turn_right(10, 90);
+            move_forward(10, 1);
+            turn_left(10, 90);
+            check = check_x_plus(x);
+        }
     }
     else if(deltaX >= 0 && deltaY <= 0 ) {
         faceDegree(0);
-        check_x_plus(x);
+        bool check = check_x_plus(x);
         faceDegree(270);
-        check_y_minus(y);
+        check = check_y_minus(y);
     }
 }
 
@@ -622,12 +678,52 @@ void performance2() {
     moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
     move_forward_timed(10,2);
 }
+void flipSwitches() {
+    //start facing right switch from upper level
+    if(RPS.RedSwitchDirection()==1) {
+        pushSwitch();
+    }
+    else {
+        pullSwitch();
+    }
+    turn_left(20, 90);
+    move_forward(20,4);
+    turn_right(20, 90);
+    faceDegree(270);
+    if(RPS.WhiteSwitchDirection()==1) {
+        pushSwitch();
+    }
+    else {
+        pullSwitch();
+    }
+    turn_left(20, 90);
+    move_forward(20,4);
+    turn_right(20, 90);
+    faceDegree(270);
+    if(RPS.BlueSwitchDirection()==1) {
+        pushSwitch();
+        move_forward(10, 1);
+    }
+    else {
+        pullSwitch();
+    }
+}
+
+void findRPSPoints() {
+    while(true) {
+        LCD.WriteLine(RPS.X());
+        LCD.WriteLine(RPS.Y());
+        Sleep(100);
+        LCD.Clear();
+    }
+}
+
 
 int main(void)
 {
-    waitForStart();
-    performance2();
-
+    //waitForStart();
+    //performance2();
+    findRPSPoints();
 
     return 0;
 }
