@@ -24,7 +24,7 @@
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
 //Tuning constant
-#define TUNING_CONSTANT 0.074
+#define TUNING_CONSTANT 0.07
 //PI
 # define M_PI           3.14159265358979323846
 
@@ -32,7 +32,7 @@
 ButtonBoard buttons(FEHIO::Bank3);
 DigitalEncoder right_encoder(FEHIO::P0_1);
 DigitalEncoder left_encoder(FEHIO::P0_0);
-FEHMotor right_motor(FEHMotor::Motor1,12.0);
+FEHMotor right_motor(FEHMotor::Motor2,12.0);
 FEHMotor left_motor(FEHMotor::Motor3,12.0);
 FEHServo arm(FEHServo::Servo0);
 
@@ -59,7 +59,7 @@ void move_forward(int percent, float inches) //using encoders
     //While the average of the left and right encoder are less than counts,
     //keep running motors
     while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
-        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+percent;
+        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent+1);
         right_motor.SetPercent(mp);
     }
 
@@ -82,6 +82,26 @@ void move_forward_timed(int percent, int time) //using encoders
     //keep running motors
     int start_time = TimeNow();
     while(TimeNow() - start_time < time);
+
+    //Turn off motors
+    right_motor.Stop();
+    left_motor.Stop();
+}
+void move_backward_timed(int percent, float inches, int time) //using encoders
+{
+    //Reset encoder counts
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+    float counts = inches*COUNTS_PER_INCH;
+    //Set both motors to desired percent
+    right_motor.SetPercent(-1 * percent);
+    left_motor.SetPercent(-1 * percent);
+    int mp = percent;
+
+    //While the average of the left and right encoder are less than counts,
+    //keep running motors
+    int start_time = TimeNow();
+    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && TimeNow() - start_time < time);
 
     //Turn off motors
     right_motor.Stop();
@@ -132,7 +152,7 @@ void move_backwards(int percent, float inches) //using encoders
 
     //While the average of the left and right encoder are less than counts,
     //keep running motors
-    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts);
+     while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts);
 
     //Turn off motors
     right_motor.Stop();
@@ -168,12 +188,14 @@ void accel_backwards(int percent, float inches) //using encoders
 //Drives either forwards or backwards until it hits a wall.
 void driveToWall(int percent) {
 
-    right_motor.SetPercent(percent+4);
+    right_motor.SetPercent(percent+5);
     left_motor.SetPercent(percent);
-    int mp = percent;
+    int mp = percent+5;
     while(frontLeftBump.Value() || frontRightBump.Value()) {
-        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+percent;
+        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent+2);
         right_motor.SetPercent(mp);
+        LCD.WriteLine(frontLeftBump.Value());
+        LCD.WriteLine(frontRightBump.Value());
         if(!frontRightBump.Value()) {
             left_motor.SetPercent(percent+5);
             right_motor.SetPercent(percent-10);
@@ -478,7 +500,7 @@ void waitForStart() {
     while(!buttons.MiddlePressed()); //Wait for middle button to be pressed
     while(buttons.MiddlePressed()); //Wait for middle button to be unpressed
     LCD.Clear();
-   // while(cds.Value() > START_LIGHT_ON);
+    while(cds.Value() > START_LIGHT_ON);
 }
 //returns 1 if light is BLUE, RED if otherwise
 int getLightColor() {
@@ -540,10 +562,11 @@ void setServo() {
 
 void pullSwitch() {
     driveToWall(20);
+    Sleep(500);
     move_backwards(10, 2.7);
     arm.SetDegree(25);
     Sleep(2.0);
-    move_backwards(10, 1);
+    move_backward_timed(10, 1, 2);
     Sleep(2.0);
     arm.SetDegree(120);
 
@@ -551,10 +574,10 @@ void pullSwitch() {
 
 void pushSwitch() {
     driveToWall(20);
-    move_backwards(10, 4);
-
+    Sleep(500);
+    move_backwards(10, 4.25);
     arm.SetDegree(25);
-    Sleep(2.0);
+    Sleep(1.0);
     move_forward_timed(10,1);
     Sleep(500);
     arm.SetDegree(120);
@@ -565,7 +588,7 @@ void goUpSideRamp() {
     Sleep(500);
     driveToWall(20);
     Sleep(500);
-    move_backwards(20, 1);
+    move_backwards(20, 0.1);
     Sleep(500);
     turn_left(20, 90);
     Sleep(500);
@@ -580,15 +603,12 @@ void goUpSideRamp() {
     left_motor.Stop();
     //end with robot facing left
     faceDegree(180);
-//    driveToWall(20);
-//    move_backwards(10, 2);
-//    turn_left(10, 90);
-//    driveToWall(20);
 }
+
 void performance2() {
     setServo();
     arm.SetDegree(120);
-    move_forward(20, 3);
+    move_forward(20, 4);
     moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
     goUpSideRamp();
     move_forward(20, 24);
@@ -597,6 +617,7 @@ void performance2() {
     turn_left(20, 90);
     move_forward(20,4);
     turn_right(20, 90);
+    faceDegree(270);
     pushSwitch();
     moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
     move_forward_timed(10,2);
@@ -606,7 +627,6 @@ int main(void)
 {
     waitForStart();
     performance2();
-
 
 
     return 0;
