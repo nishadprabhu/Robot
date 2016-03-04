@@ -5,6 +5,7 @@
 #include <FEHMotor.h>
 #include <FEHRPS.h>
 #include <math.h>
+#include "locations.h"
 //Defining states for following lines
 #define ON_LINE 1.9
 #define CENTER 0
@@ -21,7 +22,7 @@
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
 //Tuning constant
-#define TUNING_CONSTANT 0.07
+#define TUNING_CONSTANT 0.072
 //PI
 # define M_PI           3.14159265358979323846
 
@@ -29,8 +30,8 @@
 ButtonBoard buttons(FEHIO::Bank3);
 DigitalEncoder right_encoder(FEHIO::P0_1);
 DigitalEncoder left_encoder(FEHIO::P0_0);
-FEHMotor right_motor(FEHMotor::Motor0,12.0);
-FEHMotor left_motor(FEHMotor::Motor1,12.0);
+FEHMotor right_motor(FEHMotor::Motor1,12.0);
+FEHMotor left_motor(FEHMotor::Motor3,12.0);
 
 AnalogInputPin right(FEHIO::P1_2);
 AnalogInputPin middle(FEHIO::P1_4);
@@ -39,8 +40,8 @@ AnalogInputPin cds(FEHIO::P1_0);
 
 DigitalInputPin frontLeftBump(FEHIO::P2_0);
 DigitalInputPin frontRightBump(FEHIO::P2_1);
-DigitalInputPin backLeftBump(FEHIO::P0_0);
-DigitalInputPin backRightBump(FEHIO::P0_0);
+DigitalInputPin backLeftBump(FEHIO::P2_3);
+DigitalInputPin backRightBump(FEHIO::P2_4);
 void move_forward(int percent, float inches) //using encoders
 {
     //Reset encoder counts
@@ -48,7 +49,7 @@ void move_forward(int percent, float inches) //using encoders
     left_encoder.ResetCounts();
     float counts = inches*COUNTS_PER_INCH;
     //Set both motors to desired percent
-    right_motor.SetPercent(percent);
+    right_motor.SetPercent(percent+3);
     left_motor.SetPercent(percent);
     int mp = percent;
 
@@ -144,11 +145,14 @@ void accel_backwards(int percent, float inches) //using encoders
 //Drives either forwards or backwards until it hits a wall.
 void driveToWall(int percent) {
 
-    right_motor.SetPercent(percent);
+    right_motor.SetPercent(percent+2);
     left_motor.SetPercent(percent);
     LCD.WriteLine(frontLeftBump.Value());
     LCD.WriteLine(frontRightBump.Value());
+    int mp = percent;
     while(frontLeftBump.Value() || frontRightBump.Value()) {
+        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+percent;
+        right_motor.SetPercent(mp);
         if(!frontRightBump.Value()) {
             left_motor.SetPercent(percent+5);
             right_motor.SetPercent(percent-10);
@@ -272,12 +276,10 @@ void faceLocation(float x, float y) {
         if(deltaY < 0) {
             degree = 360 + degree;
         }
-
     }
     else if (deltaX < 0) {
         degree = atan(deltaY/deltaX) * 180/PI + 180;
     }
-
     float heading = RPS.Heading();
     float deltaTheta = angleBetween(heading, degree)
     while(abs(deltaTheta) > 0) {
@@ -292,7 +294,6 @@ void faceLocation(float x, float y) {
         }
         if(degree > 180) {
             turn_right(30,1);
-
         }
         else {
             turn_left(30,1);
@@ -319,6 +320,33 @@ float angleBetween(float degree1, float degree2) {
     //use dot product definition to get angle between
     return acos(dot) * 180/M_PI;
 }
+void faceDegree(float degree) {
+    float headingToZero = 0;
+    float degreeToZero = degree - RPS.Heading();
+    if(degreeToZero < 0) {
+        degreeToZero+=360;
+    }
+    float deltaTheta = angleBetween(headingToZero, degreeToZero);
+    while(deltaTheta > 0.7) {
+        LCD.WriteLine(RPS.Heading());
+        headingToZero = 0;
+        degreeToZero = degree-RPS.Heading();
+        if(degreeToZero < 0) {
+            degreeToZero+=360;
+        }
+        deltaTheta = angleBetween(headingToZero, degreeToZero);
+        if(degreeToZero > 180) {
+            turn_right(10,0.5);
+        }
+        else {
+            turn_left(10,0.5);
+        }
+        Sleep(10);
+
+    }
+}
+
+
 void check_x_plus(float x_coordinate) //using RPS while robot is in the +x direction
 {
     //check whether the robot is within an acceptable range
@@ -326,12 +354,12 @@ void check_x_plus(float x_coordinate) //using RPS while robot is in the +x direc
     {
         if(RPS.X() > x_coordinate)
         {
-            accel_backwards(10,1);
+            move_backwards(20,0.5);
         }
         else if(RPS.X() < x_coordinate)
         {
             //pulse the motors for a short duration in the correct direction
-            accel_forward(10,1);
+            move_forward(20,0.5);
         }
     }
 }
@@ -342,13 +370,20 @@ void check_x_minus(float x_coordinate) //using RPS while robot is in the +x dire
     {
         if(RPS.X() > x_coordinate)
         {
-            accel_forward(10,1);
+            move_forward(20,0.5);
         }
         else if(RPS.X() < x_coordinate)
         {
             //pulse the motors for a short duration in the correct direction
-            accel_backwards(10,1);
+            move_backwards(20,0.5);
         }
+        else if(RPS.X() < 0) {
+            turn_left(20, 90);
+            driveToWall(20);
+            move_backwards(10, 2);
+            faceDegree(180);
+        }
+
     }
 }
 void check_y_minus(float y_coordinate) //using RPS while robot is in the -y direction
@@ -358,13 +393,13 @@ void check_y_minus(float y_coordinate) //using RPS while robot is in the -y dire
     {
         if(RPS.Y() > y_coordinate)
         {
-            accel_forward(10,1);
+            move_forward(20,0.5);
         }
         else if(RPS.Y() < y_coordinate)
         {
             //pulse the motors for a short duration in the correct direction
 
-            accel_backwards(10,1);
+            move_backwards(20,0.5);
         }
     }
 }
@@ -376,37 +411,14 @@ void check_y_plus(float y_coordinate) //using RPS while robot is in the +y direc
     {
         if(RPS.Y() > y_coordinate)
         {
-            accel_backwards(10,1);
+            move_backwards(20,1);
         }
         else if(RPS.Y() < y_coordinate)
         {
             //pulse the motors for a short duration in the correct direction
 
-            accel_forward(10,1);
+            move_forward(20,1);
         }
-    }
-}
-void faceDegree(float degree) {
-    float headingToZero = 0;
-    float degreeToZero = degree - RPS.Heading();
-    if(degreeToZero < 0) {
-        degreeToZero+=360;
-    }
-    float deltaTheta = angleBetween(headingToZero, degreeToZero);
-    while(deltaTheta > 1) {
-        headingToZero = 0;
-        degreeToZero = degree-RPS.Heading();
-        if(degreeToZero < 0) {
-            degreeToZero+=360;
-        }
-        deltaTheta = angleBetween(headingToZero, degreeToZero);
-        if(degreeToZero > 180) {
-            turn_right(20,1);
-        }
-        else {
-            turn_left(20,1);
-        }
-
     }
 }
 void moveTo(float x, float y) {
@@ -427,10 +439,10 @@ void moveTo(float x, float y) {
         check_y_plus(y);
     }
     else if(deltaX <= 0 && deltaY <= 0 ) {
-        faceDegree(180);
-        check_x_minus(x);
         faceDegree(270);
         check_y_minus(y);
+        faceDegree(180);
+        check_x_minus(x);
     }
     else if(deltaX >= 0 && deltaY <= 0 ) {
         faceDegree(0);
@@ -439,7 +451,6 @@ void moveTo(float x, float y) {
         check_y_minus(y);
     }
 }
-
 
 void waitForStart() {
     RPS.InitializeTouchMenu();
@@ -501,16 +512,6 @@ void performance1() {
        // LCD.WriteLine("Red");
     }
 }
-void performance2() {
-    moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
-    goUpSideRamp();
-    moveTo(Location::MID_SWITCH_X,  Location::MID_SWITCH_Y);
-    //pull switch
-    faceDegree(225);
-    //push switch
-    moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
-    accel_forward(3,10);
-}
 void goUpSideRamp() {
     faceDegree(0);
     Sleep(500);
@@ -526,19 +527,32 @@ void goUpSideRamp() {
     Sleep(500);
     turn_left(20, 90);
     Sleep(500);
-    while(RPS.X() < 0) {
-        left_motor.SetPercent(30);
-        right_motor.SetPercent(30);
-    }
+    move_forward(30, 12.5);
     right_motor.Stop();
     left_motor.Stop();
     //end with robot facing left
     faceDegree(180);
+    driveToWall(20);
+    move_backwards(10, 2);
+    turn_left(10, 90);
+    driveToWall(20);
 }
+void performance2() {
+    moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
+    goUpSideRamp();
+    moveTo(Location::MID_SWITCH_X, Location::MID_SWITCH_Y);
+    //pull switch
+    faceDegree(315);
+    //push switch
+    moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
+    accel_forward(3,10);
+}
+
 int main(void)
 {
     waitForStart();
-    //performance2();
+    performance2();
+
 
 
 
