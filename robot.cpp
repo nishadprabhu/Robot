@@ -107,39 +107,6 @@ void move_backward_timed(int percent, float inches, int time) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
-void accel_forward(int percent, float inches) //using encoders
-{
-    //Reset encoder counts
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
-    float counts = inches*COUNTS_PER_INCH;
-    //Set both motors to desired percent
-    int mp = 1;
-    right_motor.SetPercent(mp);
-    left_motor.SetPercent(mp);
-
-
-    //While the average of the left and right encoder are less than counts,
-    //keep running motors
-    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
-        while(mp<percent) {
-            mp++;
-            right_motor.SetPercent(mp+1);
-            left_motor.SetPercent(mp);
-            Sleep(20);
-
-        }
-        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+percent;
-        right_motor.SetPercent(mp);
-//        if((left_encoder.Counts() + right_encoder.Counts())/2. > counts*.75) {
-//            right_motor.SetPercent(percent * .5);
-//        }
-    }
-
-    //Turn off motors
-    right_motor.Stop();
-    left_motor.Stop();
-}
 void move_backwards(int percent, float inches) //using encoders
 {
     //Reset encoder counts
@@ -153,33 +120,6 @@ void move_backwards(int percent, float inches) //using encoders
     //While the average of the left and right encoder are less than counts,
     //keep running motors
      while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts);
-
-    //Turn off motors
-    right_motor.Stop();
-    left_motor.Stop();
-}
-void accel_backwards(int percent, float inches) //using encoders
-{
-    //Reset encoder counts
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
-    float counts = inches*COUNTS_PER_INCH;
-    //Set both motors to desired percent
-    int mp = -1;
-    percent *=-1;
-    right_motor.SetPercent(mp);
-    left_motor.SetPercent(mp);
-
-
-    //While the average of the left and right encoder are less than counts,
-    //keep running motors
-    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
-        while(mp>percent) {
-            mp--;
-            right_motor.SetPercent(mp);
-            left_motor.SetPercent(mp);
-        }
-    }
 
     //Turn off motors
     right_motor.Stop();
@@ -295,64 +235,7 @@ void turn_right(int percent, float degrees) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
-/*
-void faceLocation(float x, float y) {
-    float robotX = RPS.X();
-    float robotY = RPS.Y();
-    double deltaX = x - robotX;
-    double deltaY = y - robotY;
-    double degree;
-    if(deltaX == 0) {
-        if(deltaY > 0) {
-            degree = 90;
-        }
-        else if (deltaY < 0) {
-            degree = 270;
-        }
-        else {
-            LCD.WriteLine("In Location");
-            return;
-        }
-    }
-    else if (deltaX > 0) {
-        degree = atan(deltaY/deltaX) * 180/PI;
-        if(deltaY < 0) {
-            degree = 360 + degree;
-        }
-    }
-    else if (deltaX < 0) {
-        degree = atan(deltaY/deltaX) * 180/PI + 180;
-    }
-    float heading = RPS.Heading();
-    float deltaTheta = angleBetween(heading, degree)
-    while(abs(deltaTheta) > 0) {
-        deltaTheta = angleBetween(RPS.Heading(), degree);
-        float headingToZero = 0;
-        float degreeToZero = degree-RPS.Heading();
-        if(degreeToZero < 0) {
-            degreeToZero += 360;
-        }
-        if(degree < 0) {
-            degree = 360 + degree;
-        }
-        if(degree > 180) {
-            turn_right(30,1);
-        }
-        else {
-            turn_left(30,1);
-        }
-        Sleep(100);
-    }
-}
-void moveTo(float x, float y) {
-  faceLocation(x,y);
-  float deltaX = x - RPS.X(), deltaY = y - RPS.Y();
-  while(abs(deltaX) > 0 && abs(deltaY) > 0){
-      accel_forward(30, 1);
-      Sleep(0.01);
-  }
-}
-*/
+
 float angleBetween(float degree1, float degree2) {
     float vect1x = cos(degree1 * M_PI/180);
     float vect1y = sin(degree1 * M_PI/180);
@@ -363,6 +246,7 @@ float angleBetween(float degree1, float degree2) {
     //use dot product definition to get angle between
     return acos(dot) * 180/M_PI;
 }
+
 void faceDegree(float degree) {
     float headingToZero = 0;
     float degreeToZero = degree - RPS.Heading();
@@ -515,46 +399,6 @@ bool detectingLight() {
     return (cds.Value() < 2.75);
 }
 
-void performance1() {
-
-    Sleep(2.0); //Wait for counts to stabilize
-    move_forward(30, 21);
-    Sleep(1.0);
-    turn_right(20, 45);
-    Sleep(1.0);
-    driveToWall(20);
-    Sleep(1.0);
-    move_backwards(20, 1);
-    Sleep(1.0);
-    turn_left(20, 90);
-    Sleep(1.0);
-    driveToWall(30);
-    Sleep(1.0);
-    move_backwards(20,0.5);
-    Sleep(1.0);
-    turn_left(20, 90);
-    Sleep(1.0);
-    move_forward(30, 13.5);
-    Sleep(1.0);
-    turn_right(20,90);
-    Sleep(1.0);
-    move_forward(30, 11);
-    if(detectingLight()) {
-        if(getLightColor() == 1) {
-            LCD.WriteLine("Blue");
-        }
-        else if(getLightColor() == 0) {
-            LCD.WriteLine("Red");
-        }
-        else {
-            //LCD.WriteLine("Red");
-        }
-    }
-
-    else {
-       // LCD.WriteLine("Red");
-    }
-}
 void setServo() {
     arm.SetMin(818);
     arm.SetMax(2355);
@@ -604,29 +448,53 @@ void goUpSideRamp() {
     //end with robot facing left
     faceDegree(180);
 }
-
-void performance2() {
-    setServo();
-    arm.SetDegree(120);
-    move_forward(20, 4);
-    moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
-    goUpSideRamp();
-    move_forward(20, 24);
-    turn_left(20, 90);
-    pullSwitch();
-    turn_left(20, 90);
-    move_forward(20,4);
-    turn_right(20, 90);
-    faceDegree(270);
-    pushSwitch();
+void flipSwitches(int red, int white, int blue) {
+    //Starting at middle switch
+    if(white == 1) {
+        pushSwitch();
+    }
+    else {
+        pullSwitch();
+    }
+    faceDegree(225);
+    if(red == 1) {
+        pushSwitch();
+    }
+    else {
+        pullSwitch();
+    }
+    faceDegree(315);
+    if(blue == 1) {
+        pushSwitch();
+    }
+    else {
+        pullSwitch();
+    }
+}
+void completeSwitches() {
+    moveTo(Location::MID_SWITCH_X, Location::MID_SWITCH_Y);
+    flipSwitches(RPS.RedSwitchDirection(), RPS.WhiteSwitchDirection(), RPS.BlueSwitchDirection());
+}
+void pushButton() {
     moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
-    move_forward_timed(10,2);
+    int correctButton = getLightColor();
+    if(correctButton == 1) {
+        arm.setDegree(90);
+        move_forward_timed(10, 2);
+        Sleep(5.0);
+        move_backward_timed(10, 3, 2);
+    }
+    else {
+        arm.setDegree(120);
+        move_forward_timed(10, 2);
+        Sleep(5.0);
+        move_backwards_timed(10, 3, 2);
+    }
 }
 
 int main(void)
 {
     waitForStart();
-    performance2();
 
 
     return 0;
