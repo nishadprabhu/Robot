@@ -1,4 +1,5 @@
 
+
 //Including FEH libraries
 #include <FEHLCD.h>
 #include <FEHIO.h>
@@ -9,7 +10,7 @@
 #include <FEHServo.h>
 #include "locations.h"
 //Defining states for following lines
-#define ON_LINE 1.9
+#define ON_LINE 2.9
 #define CENTER 0
 #define LEFT -1
 #define FAR_LEFT -2
@@ -45,6 +46,13 @@ DigitalInputPin frontLeftBump(FEHIO::P2_0);
 DigitalInputPin frontRightBump(FEHIO::P2_1);
 DigitalInputPin backLeftBump(FEHIO::P2_3);
 DigitalInputPin backRightBump(FEHIO::P2_4);
+/** move_forward
+    Moves the robot forward
+
+    @param percent Motor percent
+    @param inches Distance robot needs to travel
+
+*/
 void move_forward(int percent, float inches) //using encoders
 {
     //Reset encoder counts
@@ -67,35 +75,24 @@ void move_forward(int percent, float inches) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
-void move_forward_timed(int percent, int time) //using encoders
-{
-    //Reset encoder counts
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
 
-    //Set both motors to desired percent
-    right_motor.SetPercent(percent+2);
-    left_motor.SetPercent(percent);
-    int mp = percent;
+/** move_forward_timed
+    Moves the robot forward, stopping when a certain time is reached or a distance is met
 
-    //While the average of the left and right encoder are less than counts,
-    //keep running motors
-    int start_time = TimeNow();
-    while(TimeNow() - start_time < time);
+    @param percent Motor percent
+    @param inches Distance robot needs to travel
+    @param time Time robot should be moving (in seconds)
 
-    //Turn off motors
-    right_motor.Stop();
-    left_motor.Stop();
-}
-void move_backward_timed(int percent, float inches, int time) //using encoders
+*/
+void move_forward_timed(int percent, float inches, int time) //using encoders
 {
     //Reset encoder counts
     right_encoder.ResetCounts();
     left_encoder.ResetCounts();
     float counts = inches*COUNTS_PER_INCH;
     //Set both motors to desired percent
-    right_motor.SetPercent(-1 * percent);
-    left_motor.SetPercent(-1 * percent);
+    right_motor.SetPercent(percent+2);
+    left_motor.SetPercent(percent);
     int mp = percent;
 
     //While the average of the left and right encoder are less than counts,
@@ -107,6 +104,14 @@ void move_backward_timed(int percent, float inches, int time) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
+
+/** move_backwards
+    Moves the robot backwards
+
+    @param percent Motor percent
+    @param inches Distance robot needs to travel
+
+*/
 void move_backwards(int percent, float inches) //using encoders
 {
     //Reset encoder counts
@@ -125,7 +130,44 @@ void move_backwards(int percent, float inches) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
-//Drives either forwards or backwards until it hits a wall.
+/** move_backwards_timed
+    Moves the robot backwards, stopping when a certain time is reached or a distance is met
+
+    @param percent Motor percent
+    @param inches Distance robot needs to travel
+    @param time Time robot should be moving (in seconds)
+
+*/
+void move_backwards_timed(int percent, float inches, int time) //using encoders
+{
+    //Reset encoder counts
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+    float counts = inches*COUNTS_PER_INCH;
+    //Set both motors to desired percent
+    right_motor.SetPercent(-1 * percent);
+    left_motor.SetPercent(-1 * percent);
+    int mp = percent;
+
+    //While the average of the left and right encoder are less than counts,
+    //keep running motors
+    int start_time = TimeNow();
+    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && TimeNow() - start_time < time) {
+
+    }
+
+
+    //Turn off motors
+    right_motor.Stop();
+    left_motor.Stop();
+}
+
+/** driveToWall
+    Moves the robot forward, stopping when it hits a wall
+
+    @param percent Motor percent
+
+*/
 void driveToWall(int percent) {
 
     right_motor.SetPercent(percent+5);
@@ -149,27 +191,34 @@ void driveToWall(int percent) {
     right_motor.Stop();
     left_motor.Stop();
 }
+
+/** followLine
+    Makes the robot follow a line.
+
+    @param speed Motor percent
+
+*/
 void followLine(float speed) {
         int leftValue, rightValue, midValue, state;
-        while(cds.Value() )
+        while(frontLeftBump.Value() || frontRightBump.Value())
         {
             leftValue = left.Value();
             rightValue = right.Value();
             midValue = middle.Value();
 
-            if(midValue >= ON_LINE && rightValue <= ON_LINE && leftValue <= ON_LINE) {
+            if(midValue <= ON_LINE && rightValue >= ON_LINE && leftValue >= ON_LINE) {
                 state = CENTER;
             }
-            else if(midValue >= ON_LINE && rightValue>= ON_LINE && leftValue <= ON_LINE) {
+            else if(midValue <= ON_LINE && rightValue<= ON_LINE && leftValue >= ON_LINE) {
                 state = LEFT;
             }
-            else if(midValue <= ON_LINE && rightValue>= ON_LINE && leftValue <= ON_LINE) {
+            else if(midValue >= ON_LINE && rightValue<= ON_LINE && leftValue >= ON_LINE) {
                 state = FAR_LEFT;
             }
-            else if(midValue >= ON_LINE && rightValue<= ON_LINE && leftValue >= ON_LINE) {
+            else if(midValue <= ON_LINE && rightValue>= ON_LINE && leftValue <= ON_LINE) {
                 state = RIGHT;
             }
-            else if(midValue <= ON_LINE && rightValue<= ON_LINE && leftValue >= ON_LINE) {
+            else if(midValue >= ON_LINE && rightValue>= ON_LINE && leftValue <= ON_LINE) {
                 state = FAR_RIGHT;
             }
             else {
@@ -182,11 +231,11 @@ void followLine(float speed) {
                     right_motor.SetPercent(speed);
                     break;
                 case LEFT:
-                    left_motor.SetPercent(speed);
-                    right_motor.SetPercent(.75*speed);
+                    left_motor.SetPercent(1.5 *speed);
+                    right_motor.SetPercent(.5 *speed);
                     break;
                 case FAR_LEFT:
-                    left_motor.SetPercent(speed);
+                    left_motor.SetPercent(2 *speed);
                     right_motor.SetPercent(.5*speed);
                     break;
                 case RIGHT:
@@ -199,13 +248,20 @@ void followLine(float speed) {
                     break;
                 case OFF_LINE:
                     left_motor.SetPercent(speed);
-                    right_motor.SetPercent(speed);
+                    right_motor.SetPercent(-1 * speed);
                     break;
             }
         }
 
 }
 
+/** turn_left
+    Turns the robot to the left for a certain amount of degrees
+
+    @param percent Motor percent
+    @param degrees Amount for robot to turn
+
+*/
 void turn_left(int percent, float degrees) //using encoders
 {
     //Reset encoder counts
@@ -221,6 +277,14 @@ void turn_left(int percent, float degrees) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
+
+/** turn_right
+    Turns the robot to the right for a certain amount of degrees
+
+    @param percent Motor percent
+    @param degrees Amount for robot to turn
+
+*/
 void turn_right(int percent, float degrees) //using encoders
 {
     //Reset encoder counts
@@ -235,7 +299,14 @@ void turn_right(int percent, float degrees) //using encoders
     right_motor.Stop();
     left_motor.Stop();
 }
+/** angleBetween
+    Gets the smaller angle between two unit vectors
 
+    @param degree1 Degree of first vector
+    @param degree2 Degree of second vector
+    @return The angle between the two vectors (angle < 180)
+
+*/
 float angleBetween(float degree1, float degree2) {
     float vect1x = cos(degree1 * M_PI/180);
     float vect1y = sin(degree1 * M_PI/180);
@@ -246,8 +317,16 @@ float angleBetween(float degree1, float degree2) {
     //use dot product definition to get angle between
     return acos(dot) * 180/M_PI;
 }
+/** faceDegree
+    Uses RPS to face the robot to a certain degree
+    @param degree Degree robot should face
 
+
+*/
 void faceDegree(float degree) {
+    if(RPS.Heading() < 0) {
+        return;
+    }
     float headingToZero = 0;
     float degreeToZero = degree - RPS.Heading();
     if(degreeToZero < 0) {
@@ -263,19 +342,27 @@ void faceDegree(float degree) {
         }
         deltaTheta = angleBetween(headingToZero, degreeToZero);
         if(degreeToZero > 180) {
-            turn_right(10,0.5);
+               turn_right(10,0.5);
+               Sleep(100);
+
         }
         else {
-            turn_left(10,0.5);
+               turn_left(10,0.5);
+               Sleep(100);
+            }
         }
-        Sleep(10);
 
     }
-}
 
+/** check_x_plus
+    Moves the robot to a certain x coordinate while it is facing the positive x direction
+    @param x_coordinate The coordinate the robot should go
 
-void check_x_plus(float x_coordinate) //using RPS while robot is in the +x direction
+*/
+
+bool check_x_plus(float x_coordinate) //using RPS while robot is in the +x direction
 {
+    bool condition = true;
     //check whether the robot is within an acceptable range
     while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
     {
@@ -288,14 +375,25 @@ void check_x_plus(float x_coordinate) //using RPS while robot is in the +x direc
             //pulse the motors for a short duration in the correct direction
             move_forward(20,0.5);
         }
+
+
     }
+    return condition;
 }
-void check_x_minus(float x_coordinate) //using RPS while robot is in the +x direction
+/** check_x_minus
+    Moves the robot to a certain x coordinate while it is facing the negative x direction
+    @param x_coordinate The coordinate the robot should go
+
+*/
+
+bool check_x_minus(float x_coordinate) //using RPS while robot is in the +x direction
 {
+    bool condition = true;
     //check whether the robot is within an acceptable range
     while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
     {
-        if(RPS.X() > x_coordinate)
+
+       if(RPS.X() > x_coordinate)
         {
             move_forward(20,0.5);
         }
@@ -304,20 +402,24 @@ void check_x_minus(float x_coordinate) //using RPS while robot is in the +x dire
             //pulse the motors for a short duration in the correct direction
             move_backwards(20,0.5);
         }
-        else if(RPS.X() < 0) {
-            turn_left(20, 90);
-            driveToWall(20);
-            move_backwards(10, 2);
-            faceDegree(180);
-        }
+
 
     }
+    return condition;
 }
-void check_y_minus(float y_coordinate) //using RPS while robot is in the -y direction
+/** check_y_minus
+    Moves the robot to a certain y coordinate while it is facing the negative y direction
+    @param y_coordinate The coordinate the robot should go
+
+*/
+
+bool check_y_minus(float y_coordinate) //using RPS while robot is in the -y direction
 {
+    bool condition = true;
     //check whether the robot is within an acceptable range
     while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
     {
+
         if(RPS.Y() > y_coordinate)
         {
             move_forward(20,0.5);
@@ -328,14 +430,22 @@ void check_y_minus(float y_coordinate) //using RPS while robot is in the -y dire
 
             move_backwards(20,0.5);
         }
-    }
-}
 
-void check_y_plus(float y_coordinate) //using RPS while robot is in the +y direction
+    }
+    return condition;
+}
+/** check_y_plus
+    Moves the robot to a certain y coordinate while it is facing the positive y direction
+    @param y_coordinate The coordinate the robot should go
+
+*/
+bool check_y_plus(float y_coordinate) //using RPS while robot is in the +y direction
 {
+    bool condition = true;
     //check whether the robot is within an acceptable range
     while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
     {
+
         if(RPS.Y() > y_coordinate)
         {
             move_backwards(20,1);
@@ -346,8 +456,17 @@ void check_y_plus(float y_coordinate) //using RPS while robot is in the +y direc
 
             move_forward(20,1);
         }
+
     }
+    return condition;
 }
+/** moveTo
+    Moves the robot to a certain coordinate.
+
+    @param x The x coordinate the robot should go to
+    @param y The y coordinate the robot should go to
+
+*/
 void moveTo(float x, float y) {
     float robotX = RPS.X();
     float robotY = RPS.Y();
@@ -355,38 +474,48 @@ void moveTo(float x, float y) {
     double deltaY = y - robotY;
     if(deltaX >=0 && deltaY >= 0) {
         faceDegree(0);
-        check_x_plus(x);
+        bool check = check_x_plus(x);
         faceDegree(90);
-        check_y_plus(y);
+        check = check_y_plus(y);
     }
     else if(deltaX <= 0 && deltaY >= 0 ) {
-        faceDegree(180);
-        check_x_minus(x);
+
         faceDegree(90);
-        check_y_plus(y);
+        bool check = check_y_plus(y);
+        faceDegree(180);
+        check = check_x_minus(x);
+
     }
     else if(deltaX <= 0 && deltaY <= 0 ) {
         faceDegree(270);
-        check_y_minus(y);
+        bool check = check_y_minus(y);
         faceDegree(180);
-        check_x_minus(x);
+        check = check_x_minus(x);
     }
     else if(deltaX >= 0 && deltaY <= 0 ) {
         faceDegree(0);
-        check_x_plus(x);
+        bool check = check_x_plus(x);
+        turn_right(20, 90);
         faceDegree(270);
-        check_y_minus(y);
+        check = check_y_minus(y);
     }
 }
+/** waitForStart
+    Initializes menu, waits for start light to go on.
 
+
+
+*/
 void waitForStart() {
     RPS.InitializeTouchMenu();
-    while(!buttons.MiddlePressed()); //Wait for middle button to be pressed
-    while(buttons.MiddlePressed()); //Wait for middle button to be unpressed
     LCD.Clear();
     while(cds.Value() > START_LIGHT_ON);
 }
-//returns 1 if light is BLUE, RED if otherwise
+/** getLightColor
+    Returns the color of the fuel light.
+
+    @return 1 if light is blue, 2 if light is red
+*/
 int getLightColor() {
     if(cds.Value() > BLUE_LIGHT_ON) {
         return 1;
@@ -395,38 +524,57 @@ int getLightColor() {
         return 0;
     }
 }
+/** detectingLight
+    Finds out whether the robot is detecting a light or not
+
+    @return true if robot is detecting light, false otherwise
+*/
 bool detectingLight() {
     return (cds.Value() < 2.75);
 }
 
+
+/** setServo
+    Sets the servo thresholds.
+
+*/
 void setServo() {
     arm.SetMin(818);
     arm.SetMax(2355);
 }
+/** pullSwitch
+    pulls a switch in front of the robot
 
+*/
 void pullSwitch() {
     driveToWall(20);
     Sleep(500);
     move_backwards(10, 2.7);
     arm.SetDegree(25);
     Sleep(2.0);
-    move_backward_timed(10, 1, 2);
+    move_backwards_timed(10, 1, 2);
     Sleep(2.0);
     arm.SetDegree(120);
 
 }
+/** pushSwitch
+    pushes a switch in front of the robot
 
+*/
 void pushSwitch() {
     driveToWall(20);
     Sleep(500);
     move_backwards(10, 4.25);
     arm.SetDegree(25);
     Sleep(1.0);
-    move_forward_timed(10,1);
+    move_forward_timed(10,1, 1);
     Sleep(500);
     arm.SetDegree(120);
 }
+/** goUpSideRamp
+    Assuming robot is facing ramp, moves up the side ramp, stopping when robot is completely on top level.
 
+*/
 void goUpSideRamp() {
     faceDegree(0);
     Sleep(500);
@@ -448,6 +596,14 @@ void goUpSideRamp() {
     //end with robot facing left
     faceDegree(180);
 }
+/** flipSwitches
+    Flips all 3 switches to their correct orientation
+
+    @param red The direction for the red switch to go
+    @param white The direction for the white switch to go
+    @param blue The direction for the blue switch to go
+
+*/
 void flipSwitches(int red, int white, int blue) {
     //Starting at middle switch
     if(white == 1) {
@@ -471,31 +627,95 @@ void flipSwitches(int red, int white, int blue) {
         pullSwitch();
     }
 }
+/** completeSwitches
+    moves to switches and flips them
+
+*/
 void completeSwitches() {
     moveTo(Location::MID_SWITCH_X, Location::MID_SWITCH_Y);
     flipSwitches(RPS.RedSwitchDirection(), RPS.WhiteSwitchDirection(), RPS.BlueSwitchDirection());
 }
+/** pushButton
+    pushes correct fuel button
+
+*/
 void pushButton() {
     moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
     int correctButton = getLightColor();
     if(correctButton == 1) {
-        arm.setDegree(90);
-        move_forward_timed(10, 2);
+        arm.SetDegree(90);
+        move_forward_timed(10, 2, 2);
         Sleep(5.0);
-        move_backward_timed(10, 3, 2);
+        move_backwards_timed(10, 3, 2);
     }
     else {
-        arm.setDegree(120);
-        move_forward_timed(10, 2);
+        arm.SetDegree(120);
+        move_forward_timed(10, 2, 2);
         Sleep(5.0);
         move_backwards_timed(10, 3, 2);
     }
 }
 
+/** findRPSPoints
+    Test program to get coordinates of important places on the course.
+
+*/
+void findRPSPoints() {
+    RPS.InitializeTouchMenu();
+    while(true) {
+        LCD.WriteLine(RPS.X());
+        LCD.WriteLine(RPS.Y());
+        LCD.WriteLine(RPS.Heading());
+        Sleep(100);
+        LCD.Clear();
+    }
+}
+void performance3() {
+    RPS.InitializeTouchMenu();
+    //go tu supplies
+    move_forward(20, 3);
+    turn_right(20, 90);
+    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y);
+    Sleep(1.0);
+    //go to bottom of ramp
+    faceDegree(270);
+    float distanceToBottomRamp = Location::BOT_MAIN_RAMP_Y - RPS.Y();
+    move_backwards(20, distanceToBottomRamp);
+    Sleep(1.0);
+    faceDegree(270);
+    //go up top of ramp
+    while(RPS.Y() < Location::TOP_MAIN_RAMP_Y-1) {
+        right_motor.SetPercent(-40);
+        left_motor.SetPercent(-40);
+    }
+    //deccelerate
+   move_backwards(15, 2);
+   //go to drop zone
+   faceDegree(270);
+   move_forward(10, 3);
+   turn_right(20, 90);
+   faceDegree(180);
+   check_x_minus(Location::MID_SWITCH_X-1);
+   turn_right(20, 90);
+   faceDegree(90);
+   move_forward_timed(10, 10, 5);
+   //drop package
+   Sleep(2.0);
+   //go down ramp
+   move_backwards(10, 10);
+   turn_right(20, 90);
+   faceDegree(0);
+   check_x_plus(Location::TOP_MAIN_RAMP_X-1);
+   turn_right(20, 90);
+   faceDegree(270);
+   Sleep(1.0);
+   move_forward_timed(20, 20, 5);
+}
+
 int main(void)
 {
-    waitForStart();
 
-
+    performance3();
     return 0;
 }
+
