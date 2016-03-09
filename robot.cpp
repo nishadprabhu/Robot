@@ -20,7 +20,7 @@
 //Defining constants to convert counts to inches or degrees
 #define COUNTS_PER_INCH 33.74
 #define LEFT_COUNTS_PER_DEGREE 1.99
-#define RIGHT_COUNTS_PER_DEGREE 1.87
+#define RIGHT_COUNTS_PER_DEGREE 1.99
 //Define thresholds for line following/start light
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
@@ -91,7 +91,7 @@ void move_forward_timed(int percent, float inches, int time) //using encoders
     left_encoder.ResetCounts();
     float counts = inches*COUNTS_PER_INCH;
     //Set both motors to desired percent
-    right_motor.SetPercent(percent+2);
+    right_motor.SetPercent(percent+1);
     left_motor.SetPercent(percent);
     int mp = percent;
 
@@ -317,6 +317,7 @@ float angleBetween(float degree1, float degree2) {
     //use dot product definition to get angle between
     return acos(dot) * 180/M_PI;
 }
+
 /** faceDegree
     Uses RPS to face the robot to a certain degree
     @param degree Degree robot should face
@@ -352,7 +353,10 @@ void faceDegree(float degree) {
             }
         }
 
-    }
+
+
+ }
+
 
 /** check_x_plus
     Moves the robot to a certain x coordinate while it is facing the positive x direction
@@ -364,7 +368,7 @@ bool check_x_plus(float x_coordinate) //using RPS while robot is in the +x direc
 {
     bool condition = true;
     //check whether the robot is within an acceptable range
-    while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
+    while((RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1) && (frontLeftBump.Value() || frontRightBump.Value()))
     {
         if(RPS.X() > x_coordinate)
         {
@@ -674,38 +678,45 @@ void performance3() {
     RPS.InitializeTouchMenu();
     //go tu supplies
     move_forward(20, 3);
-    turn_right(20, 90);
-    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y);
+    turn_right(20, 95);
+    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y + 0.5);
     Sleep(1.0);
     //go to bottom of ramp
-    faceDegree(270);
-    float distanceToBottomRamp = Location::BOT_MAIN_RAMP_Y - RPS.Y();
+    faceDegree(269);
+    float distanceToBottomRamp = Location::BOT_MAIN_RAMP_Y - RPS.Y()- 1;
     move_backwards(20, distanceToBottomRamp);
     Sleep(1.0);
     faceDegree(270);
     //go up top of ramp
-    while(RPS.Y() < Location::TOP_MAIN_RAMP_Y-1) {
-        right_motor.SetPercent(-40);
-        left_motor.SetPercent(-40);
+    double timeTrying = TimeNow();
+    while(RPS.Y() < Location::TOP_MAIN_RAMP_Y - 2 ) {
+        move_backwards(35, 1);
+        LCD.WriteLine(TimeNow());
+        if(TimeNow() - timeTrying > 5) {
+            LCD.Clear();
+            LCD.WriteLine("fail");
+            break;
+        }
     }
+
     //deccelerate
    move_backwards(15, 2);
+   Sleep(1.0);
+   check_y_minus(Location::TOP_MAIN_RAMP_Y);
    //go to drop zone
-   faceDegree(270);
-   move_forward(10, 3);
    turn_right(20, 90);
    faceDegree(180);
    check_x_minus(Location::MID_SWITCH_X-1);
-   turn_right(20, 90);
+   turn_right(20, 95);
    faceDegree(90);
-   move_forward_timed(10, 10, 5);
+   move_forward_timed(20, 10, 3);
    //drop package
    Sleep(2.0);
    //go down ramp
-   move_backwards(10, 10);
+   move_backwards(10, 9);
    turn_right(20, 90);
    faceDegree(0);
-   check_x_plus(Location::TOP_MAIN_RAMP_X-1);
+   check_x_plus(Location::TOP_MAIN_RAMP_X-2);
    turn_right(20, 90);
    faceDegree(270);
    Sleep(1.0);
@@ -716,6 +727,7 @@ int main(void)
 {
 
     performance3();
+
     return 0;
 }
 
