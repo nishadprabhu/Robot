@@ -1,5 +1,6 @@
 
 
+
 //Including FEH libraries
 #include <FEHLCD.h>
 #include <FEHIO.h>
@@ -67,7 +68,7 @@ void move_forward(int percent, float inches) //using encoders
     //While the average of the left and right encoder are less than counts,
     //keep running motors
     while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
-        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent+1);
+        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent);
         right_motor.SetPercent(mp);
     }
 
@@ -170,11 +171,11 @@ void move_backwards_timed(int percent, float inches, int time) //using encoders
 */
 void driveToWall(int percent) {
 
-    right_motor.SetPercent(percent+5);
+    right_motor.SetPercent(percent);
     left_motor.SetPercent(percent);
     int mp = percent+5;
     while(frontLeftBump.Value() || frontRightBump.Value()) {
-        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent+2);
+        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent);
         right_motor.SetPercent(mp);
         LCD.WriteLine(frontLeftBump.Value());
         LCD.WriteLine(frontRightBump.Value());
@@ -546,6 +547,23 @@ void setServo() {
     arm.SetMin(818);
     arm.SetMax(2355);
 }
+void moveArm(float nextDegree, float currentDegree) {
+    if(currentDegree < nextDegree) {
+        while(currentDegree < nextDegree) {
+            arm.SetDegree(currentDegree);
+            currentDegree++;
+            Sleep(10);
+        }
+    }
+    else {
+        while(currentDegree > nextDegree) {
+            arm.SetDegree(currentDegree);
+            currentDegree--;
+            Sleep(10);
+        }
+    }
+}
+
 /** pullSwitch
     pulls a switch in front of the robot
 
@@ -659,6 +677,22 @@ void pushButton() {
         move_backwards_timed(10, 3, 2);
     }
 }
+void pickUpSupplies() {
+    move_backwards(10, 2.75);
+    faceDegree(270);
+    arm.SetDegree(0);
+    Sleep(1.0);
+    moveArm(45, 0);
+}
+
+void dropSupplies() {
+    move_backwards(10, 2.5);
+    moveArm(0, 45);
+    Sleep(1.0);
+    move_backwards(10, 4);
+    Sleep(1.0);
+    arm.SetDegree(45);
+}
 
 /** findRPSPoints
     Test program to get coordinates of important places on the course.
@@ -676,44 +710,39 @@ void findRPSPoints() {
 }
 void performance3() {
     RPS.InitializeTouchMenu();
+    setServo();
+    arm.SetDegree(45);
     //go tu supplies
     move_forward(20, 3);
     turn_right(20, 95);
-    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y + 0.5);
+    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y);
     Sleep(1.0);
-    //go to bottom of ramp
-    faceDegree(269);
-    float distanceToBottomRamp = Location::BOT_MAIN_RAMP_Y - RPS.Y()- 1;
-    move_backwards(20, distanceToBottomRamp);
-    Sleep(1.0);
-    faceDegree(270);
-    //go up top of ramp
-    double timeTrying = TimeNow();
-    while(RPS.Y() < Location::TOP_MAIN_RAMP_Y - 2 ) {
-        move_backwards(35, 1);
-        LCD.WriteLine(TimeNow());
-        if(TimeNow() - timeTrying > 5) {
-            LCD.Clear();
-            LCD.WriteLine("fail");
-            break;
-        }
-    }
+    //PUT PICKING UP METHODS BELOW
 
-    //deccelerate
-   move_backwards(15, 2);
-   Sleep(1.0);
-   check_y_minus(Location::TOP_MAIN_RAMP_Y);
+    pickUpSupplies();
+
+    //go to bottom of ramp
+    faceDegree(90);
+    moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
+    faceDegree(0);
+    goUpSideRamp();
+    turn_left(20, 90);
+    faceDegree(270);
+    check_y_minus(Location::TOP_MAIN_RAMP_Y);
    //go to drop zone
    turn_right(20, 90);
    faceDegree(180);
    check_x_minus(Location::MID_SWITCH_X-1);
    turn_right(20, 95);
    faceDegree(90);
-   move_forward_timed(20, 10, 3);
+   move_forward_timed(20, 10, 2);
    //drop package
+   dropSupplies();
+
+
    Sleep(2.0);
    //go down ramp
-   move_backwards(10, 9);
+   move_backwards(10, 3);
    turn_right(20, 90);
    faceDegree(0);
    check_x_plus(Location::TOP_MAIN_RAMP_X-2);
@@ -727,6 +756,7 @@ int main(void)
 {
 
     performance3();
+
 
     return 0;
 }
