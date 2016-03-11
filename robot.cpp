@@ -345,7 +345,7 @@ void faceDegree(float degree) {
     }
     float deltaTheta = angleBetween(headingToZero, degreeToZero);
     float timeStarted = TimeNow();
-    while(deltaTheta > 0.7) {
+    while(deltaTheta > 0.3) {
         LCD.WriteLine(RPS.Heading());
         headingToZero = 0;
         degreeToZero = degree-RPS.Heading();
@@ -355,16 +355,11 @@ void faceDegree(float degree) {
         deltaTheta = angleBetween(headingToZero, degreeToZero);
         if(degreeToZero > 180) {
                 turn_right(15,0.1);
-
-
-
                Sleep(50);
 
         }
         else {
                 turn_left(15,0.1);
-
-
                Sleep(50);
             }
         }
@@ -373,7 +368,96 @@ void faceDegree(float degree) {
 
  }
 
+void checkPositioning(float x, float y, bool positiveY) {
+    //take care of x positioning
+    if(x > RPS.X()) {
+        move_backwards(10, 2);
+        if(positiveY) {
+            faceDegree(75);
+        }
+        else {
+            faceDegree(285);
+        }
+        while((RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1))
+        {
+            if(RPS.X() > x_coordinate)
+            {
+                move_backwards(20,0.5);
+            }
+            else if(RPS.X() < x_coordinate)
+            {
+                //pulse the motors for a short duration in the correct direction
+                move_forward(20,0.5);
+            }
+            Sleep(50);
+        }
+    }
+    else {
+        move_backwards(10, 2);
+        if(positiveY) {
+            faceDegree(105);
+        }
+        else {
+            faceDegree(255);
+        }
+         while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
+        {
+            if(angleBetween(startingDegree, RPS.Heading()) > 4) {
+                faceDegree(180);
+            }
+           if(RPS.X() > x_coordinate)
+            {
+                move_forward(20,1);
+            }
+            else if(RPS.X() < x_coordinate)
+            {
+                //pulse the motors for a short duration in the correct direction
+                move_backwards(20,1);
+            }
+            Sleep(50);
 
+
+        }
+        
+    }
+    if(positiveY) {
+        faceDegree(90);
+        while(RPS.Y() < y - 1 || RPS.Y() > y + 1)
+        {
+                if(RPS.Y() > y)
+                {
+                    move_backwards(20,0.1);
+                }
+                else if(RPS.Y() < y)
+                {
+                    //pulse the motors for a short duration in the correct direction
+                    move_forward(20,0.1);
+                }
+                Sleep(50);
+
+        }
+        faceDegree(90);
+    }
+    else {
+        faceDegree(180);
+        while(RPS.Y() < y - 1 || RPS.Y() > y + 1)
+        {
+                if(RPS.Y() < y)
+                {
+                    move_backwards(20,0.1);
+                }
+                else if(RPS.Y() > y)
+                {
+                    //pulse the motors for a short duration in the correct direction
+                    move_forward(20,0.1);
+                }
+                Sleep(50);
+
+        }
+        faceDegree(180);
+    }
+    
+}
 /** check_x_plus
     Moves the robot to a certain x coordinate while it is facing the positive x direction
     @param x_coordinate The coordinate the robot should go
@@ -383,9 +467,13 @@ void faceDegree(float degree) {
 bool check_x_plus(float x_coordinate) //using RPS while robot is in the +x direction
 {
     bool condition = true;
+    float startingDegree = RPS.Heading();
     //check whether the robot is within an acceptable range
     while((RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1) && (frontLeftBump.Value() || frontRightBump.Value()))
     {
+        if(angleBetween(startingDegree, RPS.Heading()) > 4) {
+            faceDegree(0);
+        }
         if(RPS.X() > x_coordinate)
         {
             move_backwards(20,0.5);
@@ -410,9 +498,12 @@ bool check_x_minus(float x_coordinate) //using RPS while robot is in the +x dire
 {
     bool condition = true;
     //check whether the robot is within an acceptable range
+    float startingDegree = RPS.Heading();
     while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
     {
-
+        if(angleBetween(startingDegree, RPS.Heading()) > 4) {
+            faceDegree(180);
+        }
        if(RPS.X() > x_coordinate)
         {
             move_forward(20,1);
@@ -437,8 +528,12 @@ bool check_y_minus(float y_coordinate) //using RPS while robot is in the -y dire
 {
     bool condition = true;
     //check whether the robot is within an acceptable range
+    float startingDegree = RPS.Heading();
     while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
     {
+        if(angleBetween(startingDegree, RPS.Heading()) > 4) {
+            faceDegree(270);
+        }
 
         if(RPS.Y() > y_coordinate)
         {
@@ -463,8 +558,12 @@ bool check_y_plus(float y_coordinate) //using RPS while robot is in the +y direc
 {
     bool condition = true;
     //check whether the robot is within an acceptable range
+    float startingDegree = RPS.Heading();
     while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
     {
+        if(angleBetween(startingDegree, RPS.Heading()) > 4) {
+            faceDegree(90);
+        }
 
         if(RPS.Y() > y_coordinate)
         {
@@ -756,7 +855,10 @@ void performance4() {
     moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
     faceDegree(0);
     goUpSideRamp();
-    moveTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
+    check_x_minus(Location::FUEL_LIGHT_X);
+    checkPositioning(Location::FUEL_LIGHT_X, RPS.Y(), true);
+    check_y_plus(Location::FUEL_LIGHT_Y - 2);
+    checkPositioning(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y, true);
     move_backwards(10, 1);
     faceDegree(90);
     pushButton();
