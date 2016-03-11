@@ -856,6 +856,8 @@ void performance4() {
     faceDegree(0);
     goUpSideRamp();
     check_x_minus(Location::FUEL_LIGHT_X);
+    turn_right(20, 90);
+    faceDegree(90);
     checkPositioning(Location::FUEL_LIGHT_X, RPS.Y(), true);
     check_y_plus(Location::FUEL_LIGHT_Y - 2);
     checkPositioning(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y, true);
@@ -865,6 +867,10 @@ void performance4() {
     moveTo(Location::TOP_MAIN_RAMP_X, Location::TOP_MAIN_RAMP_Y);
     faceDegree(180);
     move_forward_timed(20, 20, 5);
+    faceDegree(180);
+    check_y_minus(Location::SUPPLIES_Y + 0.5);
+    checkPositioning(Location::SUPPLIES_X, Location::SUPPLIES_Y + 0.5, false);
+    pickUpSupplies();
     moveTo(Location::START_X, Location::START_Y);
     faceDegree(225);
     arm.SetDegree(90);
