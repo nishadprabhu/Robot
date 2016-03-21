@@ -1,5 +1,3 @@
-
-
 //Including FEH libraries
 #include <FEHLCD.h>
 #include <FEHIO.h>
@@ -48,10 +46,8 @@ DigitalInputPin backLeftBump(FEHIO::P2_3);
 DigitalInputPin backRightBump(FEHIO::P2_4);
 /** move_forward
     Moves the robot forward
-
     @param percent Motor percent
     @param inches Distance robot needs to travel
-
 */
 void move_forward(int percent, float inches) //using encoders
 {
@@ -78,11 +74,9 @@ void move_forward(int percent, float inches) //using encoders
 
 /** move_forward_timed
     Moves the robot forward, stopping when a certain time is reached or a distance is met
-
     @param percent Motor percent
     @param inches Distance robot needs to travel
     @param time Time robot should be moving (in seconds)
-
 */
 void move_forward_timed(int percent, float inches, int time) //using encoders
 {
@@ -110,10 +104,8 @@ void move_forward_timed(int percent, float inches, int time) //using encoders
 
 /** move_backwards
     Moves the robot backwards
-
     @param percent Motor percent
     @param inches Distance robot needs to travel
-
 */
 void move_backwards(int percent, float inches) //using encoders
 {
@@ -135,11 +127,9 @@ void move_backwards(int percent, float inches) //using encoders
 }
 /** move_backwards_timed
     Moves the robot backwards, stopping when a certain time is reached or a distance is met
-
     @param percent Motor percent
     @param inches Distance robot needs to travel
     @param time Time robot should be moving (in seconds)
-
 */
 void move_backwards_timed(int percent, float inches, int time) //using encoders
 {
@@ -167,9 +157,7 @@ void move_backwards_timed(int percent, float inches, int time) //using encoders
 
 /** driveToWall
     Moves the robot forward, stopping when it hits a wall
-
     @param percent Motor percent
-
 */
 void driveToWall(int percent) {
 
@@ -197,9 +185,7 @@ void driveToWall(int percent) {
 
 /** followLine
     Makes the robot follow a line.
-
     @param speed Motor percent
-
 */
 void followLine(float speed, float distance) {
         int leftValue, rightValue, midValue, state;
@@ -267,10 +253,8 @@ void followLine(float speed, float distance) {
 
 /** turn_left
     Turns the robot to the left for a certain amount of degrees
-
     @param percent Motor percent
     @param degrees Amount for robot to turn
-
 */
 void turn_left(int percent, float degrees) //using encoders
 {
@@ -290,10 +274,8 @@ void turn_left(int percent, float degrees) //using encoders
 
 /** turn_right
     Turns the robot to the right for a certain amount of degrees
-
     @param percent Motor percent
     @param degrees Amount for robot to turn
-
 */
 void turn_right(int percent, float degrees) //using encoders
 {
@@ -311,11 +293,9 @@ void turn_right(int percent, float degrees) //using encoders
 }
 /** angleBetween
     Gets the smaller angle between two unit vectors
-
     @param degree1 Degree of first vector
     @param degree2 Degree of second vector
     @return The angle between the two vectors (angle < 180)
-
 */
 float angleBetween(float degree1, float degree2) {
     float vect1x = cos(degree1 * M_PI/180);
@@ -331,8 +311,6 @@ float angleBetween(float degree1, float degree2) {
 /** faceDegree
     Uses RPS to face the robot to a certain degree
     @param degree Degree robot should face
-
-
 */
 void faceDegree(float degree) {
     if(RPS.Heading() < 0) {
@@ -345,7 +323,7 @@ void faceDegree(float degree) {
     }
     float deltaTheta = angleBetween(headingToZero, degreeToZero);
     float timeStarted = TimeNow();
-    while(deltaTheta > 0.3) {
+    while(deltaTheta > 0.5) {
         LCD.WriteLine(RPS.Heading());
         headingToZero = 0;
         degreeToZero = degree-RPS.Heading();
@@ -378,16 +356,20 @@ void checkPositioning(float x, float y, bool positiveY) {
         else {
             faceDegree(285);
         }
-        while((RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1))
+        while((RPS.X() < x - 1 || RPS.X() > x + 1))
         {
-            if(RPS.X() > x_coordinate)
+            if(RPS.X() > x)
             {
                 move_backwards(20,0.5);
             }
-            else if(RPS.X() < x_coordinate)
+            else if(RPS.X() < x)
             {
                 //pulse the motors for a short duration in the correct direction
                 move_forward(20,0.5);
+            }
+            if(RPS.X() < 0) {
+                LCD.WriteLine("Override");
+                break;
             }
             Sleep(50);
         }
@@ -400,16 +382,20 @@ void checkPositioning(float x, float y, bool positiveY) {
         else {
             faceDegree(255);
         }
-         while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
+         while(RPS.X() < x - 1 || RPS.X() > x + 1)
         {
-            if(angleBetween(startingDegree, RPS.Heading()) > 4) {
+            if(angleBetween(180, RPS.Heading()) > 4) {
                 faceDegree(180);
             }
-           if(RPS.X() > x_coordinate)
+            if(RPS.X() < 0) {
+                LCD.WriteLine("Override");
+                break;
+            }
+           if(RPS.X() > x)
             {
                 move_forward(20,1);
             }
-            else if(RPS.X() < x_coordinate)
+            else if(RPS.X() < x)
             {
                 //pulse the motors for a short duration in the correct direction
                 move_backwards(20,1);
@@ -418,7 +404,7 @@ void checkPositioning(float x, float y, bool positiveY) {
 
 
         }
-        
+
     }
     if(positiveY) {
         faceDegree(90);
@@ -456,24 +442,20 @@ void checkPositioning(float x, float y, bool positiveY) {
         }
         faceDegree(180);
     }
-    
+
 }
 /** check_x_plus
     Moves the robot to a certain x coordinate while it is facing the positive x direction
     @param x_coordinate The coordinate the robot should go
-
 */
 
 bool check_x_plus(float x_coordinate) //using RPS while robot is in the +x direction
 {
     bool condition = true;
-    float startingDegree = RPS.Heading();
     //check whether the robot is within an acceptable range
     while((RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1) && (frontLeftBump.Value() || frontRightBump.Value()))
     {
-        if(angleBetween(startingDegree, RPS.Heading()) > 4) {
-            faceDegree(0);
-        }
+
         if(RPS.X() > x_coordinate)
         {
             move_backwards(20,0.5);
@@ -491,7 +473,6 @@ bool check_x_plus(float x_coordinate) //using RPS while robot is in the +x direc
 /** check_x_minus
     Moves the robot to a certain x coordinate while it is facing the negative x direction
     @param x_coordinate The coordinate the robot should go
-
 */
 
 bool check_x_minus(float x_coordinate) //using RPS while robot is in the +x direction
@@ -501,9 +482,6 @@ bool check_x_minus(float x_coordinate) //using RPS while robot is in the +x dire
     float startingDegree = RPS.Heading();
     while(RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1)
     {
-        if(angleBetween(startingDegree, RPS.Heading()) > 4) {
-            faceDegree(180);
-        }
        if(RPS.X() > x_coordinate)
         {
             move_forward(20,1);
@@ -521,7 +499,6 @@ bool check_x_minus(float x_coordinate) //using RPS while robot is in the +x dire
 /** check_y_minus
     Moves the robot to a certain y coordinate while it is facing the negative y direction
     @param y_coordinate The coordinate the robot should go
-
 */
 
 bool check_y_minus(float y_coordinate) //using RPS while robot is in the -y direction
@@ -531,10 +508,6 @@ bool check_y_minus(float y_coordinate) //using RPS while robot is in the -y dire
     float startingDegree = RPS.Heading();
     while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
     {
-        if(angleBetween(startingDegree, RPS.Heading()) > 4) {
-            faceDegree(270);
-        }
-
         if(RPS.Y() > y_coordinate)
         {
             move_forward(20,0.5);
@@ -552,7 +525,6 @@ bool check_y_minus(float y_coordinate) //using RPS while robot is in the -y dire
 /** check_y_plus
     Moves the robot to a certain y coordinate while it is facing the positive y direction
     @param y_coordinate The coordinate the robot should go
-
 */
 bool check_y_plus(float y_coordinate) //using RPS while robot is in the +y direction
 {
@@ -561,10 +533,6 @@ bool check_y_plus(float y_coordinate) //using RPS while robot is in the +y direc
     float startingDegree = RPS.Heading();
     while(RPS.Y() < y_coordinate - 1 || RPS.Y() > y_coordinate + 1)
     {
-        if(angleBetween(startingDegree, RPS.Heading()) > 4) {
-            faceDegree(90);
-        }
-
         if(RPS.Y() > y_coordinate)
         {
             move_backwards(20,0.1);
@@ -581,10 +549,8 @@ bool check_y_plus(float y_coordinate) //using RPS while robot is in the +y direc
 }
 /** moveTo
     Moves the robot to a certain coordinate.
-
     @param x The x coordinate the robot should go to
     @param y The y coordinate the robot should go to
-
 */
 void moveTo(float x, float y) {
     float robotX = RPS.X();
@@ -621,9 +587,6 @@ void moveTo(float x, float y) {
 }
 /** waitForStart
     Initializes menu, waits for start light to go on.
-
-
-
 */
 void waitForStart() {
     RPS.InitializeTouchMenu();
@@ -632,7 +595,6 @@ void waitForStart() {
 }
 /** getLightColor
     Returns the color of the fuel light.
-
     @return 1 if light is blue, 2 if light is red
 */
 int getLightColor() {
@@ -645,7 +607,6 @@ int getLightColor() {
 }
 /** detectingLight
     Finds out whether the robot is detecting a light or not
-
     @return true if robot is detecting light, false otherwise
 */
 bool detectingLight() {
@@ -655,7 +616,6 @@ bool detectingLight() {
 
 /** setServo
     Sets the servo thresholds.
-
 */
 void setServo() {
     arm.SetMin(818);
@@ -680,7 +640,6 @@ void moveArm(float currentDegree, float nextDegree) {
 
 /** pullSwitch
     pulls a switch in front of the robot
-
 */
 void pullSwitch() {
     driveToWall(20);
@@ -695,7 +654,6 @@ void pullSwitch() {
 }
 /** pushSwitch
     pushes a switch in front of the robot
-
 */
 void pushSwitch() {
     driveToWall(20);
@@ -709,7 +667,6 @@ void pushSwitch() {
 }
 /** goUpSideRamp
     Assuming robot is facing ramp, moves up the side ramp, stopping when robot is completely on top level.
-
 */
 void goUpSideRamp() {
     faceDegree(0);
@@ -735,11 +692,9 @@ void goUpSideRamp() {
 }
 /** flipSwitches
     Flips all 3 switches to their correct orientation
-
     @param red The direction for the red switch to go
     @param white The direction for the white switch to go
     @param blue The direction for the blue switch to go
-
 */
 void flipSwitches(int red, int white, int blue) {
     //Starting at middle switch
@@ -766,7 +721,6 @@ void flipSwitches(int red, int white, int blue) {
 }
 /** completeSwitches
     moves to switches and flips them
-
 */
 void completeSwitches() {
     moveTo(Location::MID_SWITCH_X, Location::MID_SWITCH_Y);
@@ -774,7 +728,6 @@ void completeSwitches() {
 }
 /** pushButton
     pushes correct fuel button
-
 */
 void pushButton() {
     int correctButton = getLightColor();
@@ -824,9 +777,9 @@ void wiggle() {
 void dropSupplies() {
     move_backwards(10, 1.5);
     LCD.WriteLine("moving backwards");
-    moveArm(45, 15);
+    moveArm(45, 20);
     LCD.WriteLine("moving arm down");
-    Sleep(1.0);
+    Sleep(3.0);
     LCD.WriteLine("sleep");
     move_backwards(30, 5);
     LCD.WriteLine("moving backwards");
@@ -838,7 +791,6 @@ void dropSupplies() {
 
 /** findRPSPoints
     Test program to get coordinates of important places on the course.
-
 */
 void findRPSPoints() {
     RPS.InitializeTouchMenu();
@@ -851,8 +803,23 @@ void findRPSPoints() {
     }
 }
 void performance4() {
-    move_forward(20, 6);
-    moveTo(Location::BOTTOM_SIDE_RAMP_X, Location::BOTTOM_SIDE_RAMP_Y);
+    setServo();
+    arm.SetDegree(90);
+    //go tu supplies
+    move_forward(20, 5);
+    turn_right(20, 95);
+    move_forward(20, 4);
+    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y+0.5);
+    Sleep(1.0);
+    //PUT PICKING UP METHODS BELOW
+
+    pickUpSupplies();
+
+    //go to bottom of ramp
+    turn_right(20, 180);
+    faceDegree(90);
+    check_y_plus(Location::BOTTOM_SIDE_RAMP_Y - 0.5);
+    turn_right(30,90);
     faceDegree(0);
     goUpSideRamp();
     check_x_minus(Location::FUEL_LIGHT_X);
@@ -868,9 +835,6 @@ void performance4() {
     faceDegree(180);
     move_forward_timed(20, 20, 5);
     faceDegree(180);
-    check_y_minus(Location::SUPPLIES_Y + 0.5);
-    checkPositioning(Location::SUPPLIES_X, Location::SUPPLIES_Y + 0.5, false);
-    pickUpSupplies();
     moveTo(Location::START_X, Location::START_Y);
     faceDegree(225);
     arm.SetDegree(90);
@@ -928,13 +892,13 @@ void performance3()
 }
 
 int main(void)
-{
+{   setServo();
     arm.SetDegree(90);
     waitForStart();
+
     performance4();
 
 
     return 0;
 
 }
-
