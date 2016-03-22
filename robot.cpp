@@ -732,8 +732,8 @@ void completeSwitches() {
 void pushButton() {
     int correctButton = getLightColor();
     if(correctButton == 1) {
-        move_backwards(10, 1);
-        arm.SetDegree(45);
+        move_backwards(10, 4.5);
+        arm.SetDegree(15);
         move_forward_timed(10, 2, 2);
         Sleep(5.0);
         move_backwards_timed(10, 3, 2);
@@ -826,9 +826,8 @@ void performance4() {
     turn_right(20, 90);
     faceDegree(90);
     checkPositioning(Location::FUEL_LIGHT_X, RPS.Y(), true);
-    check_y_plus(Location::FUEL_LIGHT_Y - 2);
+    check_y_plus(Location::FUEL_LIGHT_Y);
     checkPositioning(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y, true);
-    move_backwards(10, 1);
     faceDegree(90);
     pushButton();
     moveTo(Location::TOP_MAIN_RAMP_X, Location::TOP_MAIN_RAMP_Y);
