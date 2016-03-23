@@ -244,7 +244,7 @@ void followLine(float speed, float distance) {
                 case OFF_LINE:
                 LCD.WriteLine("OFFLINE");
                     left_motor.SetPercent(speed);
-                    right_motor.SetPercent(-1 * speed);
+                    right_motor.SetPercent(speed);
                     break;
             }
         }
@@ -356,16 +356,16 @@ void checkPositioning(float x, float y, bool positiveY) {
         else {
             faceDegree(285);
         }
-        while((RPS.X() < x - 1 || RPS.X() > x + 1))
+        while((RPS.X() < x - 0.6 || RPS.X() > x + 0.6))
         {
             if(RPS.X() > x)
             {
-                move_backwards(20,0.5);
+                move_backwards(20,0.1);
             }
             else if(RPS.X() < x)
             {
                 //pulse the motors for a short duration in the correct direction
-                move_forward(20,0.5);
+                move_forward(20,0.1);
             }
             if(RPS.X() < 0) {
                 LCD.WriteLine("Override");
@@ -609,7 +609,7 @@ int getLightColor() {
     @return true if robot is detecting light, false otherwise
 */
 bool detectingLight() {
-    return (cds.Value() < 2.75);
+    return (cds.Value() < 1.5);
 }
 
 
@@ -814,7 +814,7 @@ void performance4() {
     move_forward(20, 5);
     turn_right(20, 95);
     move_forward(20, 4);
-    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y+0.5);
+    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y+0.6);
     Sleep(1.0);
     //PUT PICKING UP METHODS BELOW
 
@@ -833,7 +833,9 @@ void performance4() {
     turn_right(20, 90);
     faceDegree(90);
     checkPositioning(Location::FUEL_LIGHT_X, RPS.Y(), true);
-    check_y_plus(Location::FUEL_LIGHT_Y);
+    while(!detectingLight()) {
+        followLine(20, 0.1);
+    }
 
     //push the button
     pushButton();
@@ -870,7 +872,7 @@ void performance3()
     move_forward(20, 5);
     turn_right(20, 95);
     move_forward(20, 4);
-    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y+0.5);
+    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y+0.6);
     Sleep(1.0);
     //PUT PICKING UP METHODS BELOW
 
