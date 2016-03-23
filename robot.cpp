@@ -63,7 +63,7 @@ void move_forward(int percent, float inches) //using encoders
     //While the average of the left and right encoder are less than counts,
     //keep running motors
     while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
-        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent+1);
+        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent);
         right_motor.SetPercent(mp);
     }
 
@@ -93,7 +93,7 @@ void move_forward_timed(int percent, float inches, int time) //using encoders
     //keep running motors
     int start_time = TimeNow();
     while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && TimeNow() - start_time < time) {
-        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent+1);
+        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent);
         right_motor.SetPercent(mp);
     }
 
@@ -139,7 +139,7 @@ void move_backwards_timed(int percent, float inches, int time) //using encoders
     float counts = inches*COUNTS_PER_INCH;
     //Set both motors to desired percent
     right_motor.SetPercent(-1 * percent);
-    left_motor.SetPercent(-1 * percent - 1);
+    left_motor.SetPercent(-1 * percent);
     int mp = percent;
 
     //While the average of the left and right encoder are less than counts,
@@ -170,12 +170,12 @@ void driveToWall(int percent) {
         LCD.WriteLine(frontLeftBump.Value());
         LCD.WriteLine(frontRightBump.Value());
         if(!frontRightBump.Value()) {
-            left_motor.SetPercent(percent+5);
-            right_motor.SetPercent(percent-10);
+            left_motor.SetPercent(percent+10);
+            right_motor.SetPercent(percent-15);
         }
         else if(!frontLeftBump.Value()) {
-            right_motor.SetPercent(percent+5);
-            left_motor.SetPercent(percent-10);
+            right_motor.SetPercent(percent+10);
+            left_motor.SetPercent(percent-15);
         }
     }
     //Turn off motors
@@ -384,21 +384,18 @@ void checkPositioning(float x, float y, bool positiveY) {
         }
          while(RPS.X() < x - 1 || RPS.X() > x + 1)
         {
-            if(angleBetween(180, RPS.Heading()) > 4) {
-                faceDegree(180);
-            }
             if(RPS.X() < 0) {
                 LCD.WriteLine("Override");
                 break;
             }
            if(RPS.X() > x)
             {
-                move_forward(20,1);
+                move_forward(20,0.5);
             }
             else if(RPS.X() < x)
             {
                 //pulse the motors for a short duration in the correct direction
-                move_backwards(20,1);
+                move_backwards(20,0.5);
             }
             Sleep(50);
 
@@ -455,15 +452,17 @@ bool check_x_plus(float x_coordinate) //using RPS while robot is in the +x direc
     //check whether the robot is within an acceptable range
     while((RPS.X() < x_coordinate - 1 || RPS.X() > x_coordinate + 1) && (frontLeftBump.Value() || frontRightBump.Value()))
     {
+        LCD.WriteLine(frontLeftBump.Value());
+        LCD.WriteLine(frontRightBump.Value());
 
         if(RPS.X() > x_coordinate)
         {
-            move_backwards(20,0.5);
+            move_backwards_timed(20,0.5, 1);
         }
         else if(RPS.X() < x_coordinate)
         {
             //pulse the motors for a short duration in the correct direction
-            move_forward(20,0.5);
+            move_forward_timed(20,0.5,1);
         }
 
 
@@ -671,20 +670,22 @@ void pushSwitch() {
 void goUpSideRamp() {
     faceDegree(0);
     Sleep(500);
+    move_forward(20, 5);
+    followLine(20, 5);
     driveToWall(20);
     Sleep(500);
     move_backwards(20, 0.25);
     Sleep(500);
-    turn_left(20, 95);
+    turn_left(20, 97);
     Sleep(500);
-    followLine(20, 7);
+    followLine(20, 15);
     driveToWall(30);
     Sleep(500);
     move_backwards(20,0.5);
     Sleep(500);
     turn_left(20, 90);
     Sleep(500);
-    move_forward(30, 13);
+    move_forward(30, 15);
     right_motor.Stop();
     left_motor.Stop();
     //end with robot facing left
@@ -731,17 +732,21 @@ void completeSwitches() {
 */
 void pushButton() {
     int correctButton = getLightColor();
-    if(correctButton == 1) {
-        move_backwards(10, 4.5);
-        arm.SetDegree(15);
-        move_forward_timed(10, 2, 2);
+    if(correctButton == 0) {
+        LCD.WriteLine("RED");
+        move_backwards(10, 8);
+        faceDegree(90);
+        moveArm(90, 20);
+        move_forward_timed(30, 10, 3);
         Sleep(5.0);
-        move_backwards_timed(10, 3, 2);
+        move_backwards_timed(10, 5, 2);
+        moveArm(20, 90);
     }
     else {
+        LCD.WriteLine("BLUE");
         move_backwards(10, 1);
-        arm.SetDegree(90);
-        move_forward_timed(10, 2, 2);
+        arm.SetDegree(95);
+        move_forward_timed(30, 10, 3);
         Sleep(5.0);
         move_backwards_timed(10, 3, 2);
     }
@@ -822,19 +827,35 @@ void performance4() {
     turn_right(30,90);
     faceDegree(0);
     goUpSideRamp();
+
+    //go to fuel light
     check_x_minus(Location::FUEL_LIGHT_X);
     turn_right(20, 90);
     faceDegree(90);
     checkPositioning(Location::FUEL_LIGHT_X, RPS.Y(), true);
     check_y_plus(Location::FUEL_LIGHT_Y);
-    checkPositioning(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y, true);
-    faceDegree(90);
+
+    //push the button
     pushButton();
-    moveTo(Location::TOP_MAIN_RAMP_X, Location::TOP_MAIN_RAMP_Y);
-    faceDegree(180);
+
+    //go back down to start
+    turn_left(20, 180);
+    faceDegree(270);
+    check_y_minus(Location::TOP_MAIN_RAMP_Y);
+    turn_right(20, 90);
+    move_forward(20, 2);
+    turn_left(20, 90);
+    faceDegree(270);
     move_forward_timed(20, 20, 5);
+    move_backwards(20, 3);
+    turn_right(20, 90);
+
     faceDegree(180);
-    moveTo(Location::START_X, Location::START_Y);
+    check_x_minus(Location::START_X);
+    turn_left(20, 90);
+    faceDegree(270);
+    move_forward(40, 10);
+    check_y_minus(Location::START_Y);
     faceDegree(225);
     arm.SetDegree(90);
     move_forward(20, 1);
