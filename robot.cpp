@@ -715,29 +715,36 @@ void moveArm(float currentDegree, float nextDegree) {
 /** pullSwitch
     pulls a switch in front of the robot
 */
-void pullSwitch() {
+void pullSwitch(int switch) {
+    if(switch == 2) {
     driveToWall(20);
     Sleep(500);
-    move_backwards(10, 2.7);
+    move_backwards(15, 2.7);
     arm.SetDegree(25);
     Sleep(2.0);
-    move_backwards_timed(10, 1, 2);
+    move_backwards_timed(10, 3, 2);
     Sleep(2.0);
     arm.SetDegree(120);
+    driveToWall(20);
+    move_backwards(15, 1);
+    }
+    
 
 }
 /** pushSwitch
     pushes a switch in front of the robot
 */
-void pushSwitch() {
+void pushSwitch(int switch) {
+    if(switch == 2) {
     driveToWall(20);
-    Sleep(500);
-    move_backwards(10, 4.25);
+    move_backwards(15, 4.25);
     arm.SetDegree(25);
-    Sleep(1.0);
-    move_forward_timed(10,1, 1);
-    Sleep(500);
+    move_forward_timed(15,=2, 1);
     arm.SetDegree(120);
+    driveToWall();
+    move_backwards(15, 1);
+    }
+    
 }
 /** goUpSideRamp
     Assuming robot is facing ramp, moves up the side ramp, stopping when robot is completely on top level.
