@@ -66,7 +66,6 @@ void move_forward(int percent, float inches) //using encoders
         mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent);
         right_motor.SetPercent(mp);
     }
-
     //Turn off motors
     right_motor.Stop();
     left_motor.Stop();
