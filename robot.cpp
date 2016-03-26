@@ -24,7 +24,7 @@
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
 //Tuning constant
-#define TUNING_CONSTANT 0.07
+#define TUNING_CONSTANT 0.074
 //PI
 # define M_PI           3.14159265358979323846
 
@@ -65,11 +65,14 @@ void move_forward(int percent, float inches) //using encoders
 
     //While the average of the left and right encoder are less than counts,
     //keep running motors
-    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts) {
-        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent+1);
+    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && (frontLeftBump.Value() || frontRightBump.Value()) ) {
+        mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent);
         right_motor.SetPercent(mp);
     }
 
+    right_motor.SetPercent(-15);
+    left_motor.SetPercent(-15);
+    Sleep(50);
     //Turn off motors
     right_motor.Stop();
     left_motor.Stop();
@@ -200,7 +203,7 @@ void followLine(float speed, float distance) {
         right_encoder.ResetCounts();
         left_encoder.ResetCounts();
         int start_time = TimeNow();
-        while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && TimeNow() - start_time < 3)
+        while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && TimeNow() - start_time < 3 && (frontLeftBump.Value() || frontRightBump.Value()))
         {
             leftValue = left.Value();
             rightValue = right.Value();
@@ -424,105 +427,8 @@ void faceDegree(float degree) {
 
 
  }
-
-void checkPositioning(float x, float y, bool positiveY) {
-    //take care of x positioning
-    if(x > RPS.X()) {
-        move_backwards_timed(10, 2, 1);
-        if(positiveY) {
-            faceDegree(75);
-        }
-        else {
-            faceDegree(285);
-        }
-        while((RPS.X() < x - 0.6 || RPS.X() > x + 0.6))
-        {
-            if(RPS.X() > x)
-            {
-                move_backwards(20,0.1);
-            }
-            else if(RPS.X() < x)
-            {
-                //pulse the motors for a short duration in the correct direction
-                move_forward(20,0.1);
-            }
-            if(RPS.X() < 0) {
-                LCD.WriteLine("Override");
-                break;
-            }
-            Sleep(50);
-        }
-    }
-    else {
-        move_backwards_timed(10, 2, 1);
-        if(positiveY) {
-            faceDegree(105);
-        }
-        else {
-            faceDegree(255);
-        }
-         while(RPS.X() < x - 0.6 || RPS.X() > x + 0.6)
-        {
-            if(RPS.X() < 0) {
-                LCD.WriteLine("Override");
-                break;
-            }
-           if(RPS.X() > x)
-            {
-                move_forward(20,0.1);
-            }
-            else if(RPS.X() < x)
-            {
-                //pulse the motors for a short duration in the correct direction
-                move_backwards(20,0.1);
-            }
-            Sleep(50);
-
-
-        }
-
-    }
-    if(positiveY) {
-        faceDegree(90);
-        while(RPS.Y() < y - 1 || RPS.Y() > y + 1)
-        {
-                if(RPS.Y() > y)
-                {
-                    move_backwards(20,0.1);
-                }
-                else if(RPS.Y() < y)
-                {
-                    //pulse the motors for a short duration in the correct direction
-                    move_forward(20,0.1);
-                }
-                Sleep(50);
-
-        }
-        faceDegree(90);
-    }
-    else {
-        faceDegree(180);
-        while(RPS.Y() < y - 1 || RPS.Y() > y + 1)
-        {
-                if(RPS.Y() < y)
-                {
-                    move_backwards(20,0.1);
-                }
-                else if(RPS.Y() > y)
-                {
-                    //pulse the motors for a short duration in the correct direction
-                    move_forward(20,0.1);
-                }
-                Sleep(50);
-
-        }
-        faceDegree(180);
-    }
-
-}
-
-bool offPositioning(float x) {
-    return (RPS.X() < x - 0.6 || RPS.X() > x + 0.6);
+void distanceTo(float x, float y) {
+    return sqrt((x - RPS.X()) * (x - RPS.X()) + (y - RPS.Y()) * (y - RPS.Y()));
 }
 
 /** check_x_plus
@@ -630,6 +536,96 @@ bool check_y_plus(float y_coordinate) //using RPS while robot is in the +y direc
     }
     return condition;
 }
+float locationDegree(float x, float y, int quadrant) {
+    float delY = y - RPS.Y();
+    float delX = x - RPS.X();
+    if(quadrant == 1) {
+        float angle = atan(delY/delX) * 180 / PI;
+    }
+    else if(quadrant == 2) {
+        float angle = atan(delY/delX) * 180/PI;
+        angle += 180;
+    }
+    else if(quadrant == 3) {
+        float angle = atan(delY/delX) * 180/PI * -1;
+        angle += 180;
+    }
+    else {
+        float angle = atan(delY/delX) * 180/PI * -1;
+        angle += 360;
+    }
+    return angle;
+}
+
+void faceLocation(float x, float y, int quadrant) {
+    float angle = locationDegree(x, y, quadrant);
+    float currentHeading = RPS.Heading();
+    float deltaTheta = angleBetween(currentHeading, angle);
+    float tempAngle -= currentHeading;
+    if(tempAngle < 0) {
+        tempAngle += 360;
+    }
+    if(tempAngle > 180) {
+        turn_right(20, deltaTheta);
+    }
+    else {
+        turn_left(20, deltaTheta);
+    }
+    faceDegree(angle);
+
+}
+
+void moveToForwards(float x, float y) {
+    int quad;
+    float delY = y - RPS.Y();
+    float delX = x - RPS.X();
+    if(delX > 0) {
+        if(delY >= 0) {
+            quad = 1;
+        }
+        else {
+            quad = 4;
+        }
+    }
+    else {
+        if(delY >= 0) {
+            quad = 2;
+        }
+        else {
+            quad = 3;
+        }
+    }
+    faceLocation(x, y, quad);
+    move_forward(20, distanceTo(x, y));
+}
+void moveToBackwards(float x, float y) {
+    int quad;
+    float delY = y - RPS.Y();
+    float delX = x - RPS.X();
+    if(delX > 0) {
+        if(delY >= 0) {
+            quad = 1;
+        }
+        else {
+            quad = 4;
+        }
+    }
+    else {
+        if(delY >= 0) {
+            quad = 2;
+        }
+        else {
+            quad = 3;
+        }
+    }
+    faceLocation(x, y, quad);
+    float head = RPS.Heading();
+    head -= 180;
+    if(head < 360) head += 360;
+    turn_right(20, 180);
+    faceDegree(head);
+    move_backwards_timed(20, distanceTo(x, y), 5);
+}
 /** moveTo
     Moves the robot to a certain coordinate.
     @param x The x coordinate the robot should go to
@@ -642,31 +638,31 @@ void moveTo(float x, float y) {
     double deltaY = y - robotY;
     if(deltaX >=0 && deltaY >= 0) {
         faceDegree(0);
-        bool check = check_x_plus(x);
+        move_forward(20, distanceTo(x, RPS.Y()));
         faceDegree(90);
-        check = check_y_plus(y);
+        move_forward(20, distanceTo(RPS.X(), y);
     }
     else if(deltaX <= 0 && deltaY >= 0 ) {
 
         faceDegree(90);
-        bool check = check_y_plus(y);
+        move_forward(20, distanceTo(RPS.X(), y);
         faceDegree(180);
-        check = check_x_minus(x);
+        move_forward(20, distanceTo(x, RPS.Y()));
 
     }
     else if(deltaX <= 0 && deltaY <= 0 ) {
         faceDegree(270);
-        bool check = check_y_minus(y);
+        move_forward(20, distanceTo(RPS.X(), y);
         turn_right(20, 90);
         faceDegree(180);
-        check = check_x_minus(x);
+        move_forward(20, distanceTo(x, RPS.Y()));
     }
     else if(deltaX >= 0 && deltaY <= 0 ) {
         faceDegree(0);
-        bool check = check_x_plus(x);
+        move_forward(20, distanceTo(x, RPS.Y()));
         turn_right(20, 90);
         faceDegree(270);
-        check = check_y_minus(y);
+        move_forward(20, distanceTo(RPS.X(), y);
     }
 }
 /** waitForStart
@@ -770,23 +766,16 @@ void pushSwitch(int s) {
 */
 void goUpSideRamp() {
     faceDegree(0);
-    Sleep(500);
     move_forward(30, 5);
     followLine(30, 5);
     driveToWall(35);
-    Sleep(500);
     move_backwards(30, 0.25);
-    Sleep(500);
     turn_left(20, 91);
-    Sleep(500);
     followLine(35, 28);
     turn_left(20, 5);
     driveToWall(35);
-    Sleep(500);
     move_backwards(35,0.5);
-    Sleep(500);
     turn_left(20, 90);
-    Sleep(500);
     LCD.WriteLine("FORWARD");
 
     move_forward(25, 16);
@@ -802,14 +791,14 @@ void goUpSideRamp() {
 */
 void flipSwitches(int red, int white, int blue) {
     //Starting at middle switch
-    driveToWall(15);
+    followLineYellow(20, 5);
     if(white == 1) {
         pushSwitch(2);
     }
     else {
         pullSwitch(2);
     }
-    driveToWall(15);
+    followLineYellow(20, 5);
     move_backwards(15, 1);
     turn_right(20, 30);
     faceDegree(240);
@@ -822,7 +811,7 @@ void flipSwitches(int red, int white, int blue) {
     move_backwards(15, 1);
     turn_left(15, 30);
     faceDegree(270);
-    driveToWall(15);
+    followLineYellow(20, 5);
     move_backwards(15, 1);
     turn_left(20, 30);
     faceDegree(300);
@@ -837,8 +826,6 @@ void flipSwitches(int red, int white, int blue) {
     moves to switches and flips them
 */
 void completeSwitches() {
-    check_x_minus(Location::MID_SWITCH_X);
-    turn_left(20, 90);
     faceDegree(270);
     flipSwitches(RPS.RedSwitchDirection(), RPS.WhiteSwitchDirection(), RPS.BlueSwitchDirection());
 }
@@ -905,6 +892,9 @@ void dropSupplies() {
     LCD.WriteLine("sleep");
     arm.SetDegree(90);
     LCD.WriteLine("arm up");
+    move_backwards(30, 2);
+    arm.SetDegree(15);
+    move_forwards(30, 2);
 }
 
 /** findRPSPoints
@@ -924,12 +914,9 @@ void startToSupplies() {
     setServo();
     arm.SetDegree(90);
     //go tu supplies
-    move_forward(20, 5);
-    turn_right(20, 95);
-    move_forward(20, 4);
+    move_forward(30, 5);
+    turn_right(30, 95);
     moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y+0.6);
-    Sleep(1.0);
-    //PUT PICKING UP METHODS BELOW
 
     pickUpSupplies();
 }
@@ -937,14 +924,13 @@ void startToSupplies() {
 void suppliesToTop() {
     faceDegree(270);
     check_y_minus(Location::BOTTOM_SIDE_RAMP_Y+0.1);
-    turn_left(20,90);
-    faceDegree(0);
+    turn_left(30,90);
     goUpSideRamp();
 
 }
 
 void doButtons() {
-    turn_right(20, 90);
+    turn_right(30, 90);
     faceDegree(90);
     move_forward(30, 4);
     while(!detectingLight(1)) {
@@ -958,29 +944,22 @@ void doButtons() {
 
 }
 void dropOff() {
-    LCD.WriteLine("Turning");
-    turn_left(20, 180);
-    faceDegree(270);
-    LCD.WriteLine("Moving");
-
-    moveTo(Location::MID_SWITCH_X - 1, Location::MID_SWITCH_Y);
-    turn_right(20, 90);
-    faceDegree(90);
-    move_forward_timed(30, 5, 2);
+    float angle = locationDegree(Location::DROP_OFF_X, Location::DROP_OFF_Y, 3);
+    moveToForwards(Location::DROP_OFF_X, Location::DROP_OFF_Y);
+    turn_right(20, angleBetween(angle, 90));
     followLineYellow(20, 3);
     //drop package
     dropSupplies();
-    move_backwards_timed(10, 3, 2);
-    check_y_plus(Location::MID_SWITCH_Y-2);
-    turn_left(20, 90);
-    faceDegree(180);
+    move_backwards_timed(20, 3, 2);
+    turn_right(20, 180);
+    followLineYellow(30, 5);
 
 }
 
 void goHome() {
     turn_left(30, 45);
     faceDegree(0);
-    check_x_plus(Location::TOP_MAIN_RAMP_X-2);
+    move_forward(30, distanceTo(Location::TOP_MAIN_RAMP_X - 2, RPS.Y()));
     turn_right(20, 90);
     faceDegree(270);
 
