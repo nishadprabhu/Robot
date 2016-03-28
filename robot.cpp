@@ -275,7 +275,7 @@ void followLineYellow(float speed, float distance) {
         right_encoder.ResetCounts();
         left_encoder.ResetCounts();
         int start_time = TimeNow();
-        while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && (TimeNow() - start_time < 3) && (frontLeftBump.Value() && frontRightBump.Value()))
+        while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && (TimeNow() - start_time < 3) && (frontLeftBump.Value() || frontRightBump.Value()))
         {
             leftValue = left.Value();
             rightValue = right.Value();
@@ -333,6 +333,14 @@ void followLineYellow(float speed, float distance) {
                     break;
 
 
+            }
+            if(!frontRightBump.Value()) {
+                left_motor.SetPercent(speed+10);
+                right_motor.SetPercent(speed-15);
+            }
+            else if(!frontLeftBump.Value()) {
+                right_motor.SetPercent(speed+10);
+                left_motor.SetPercent(speed-15);
             }
         }
 }
@@ -415,7 +423,7 @@ void faceDegree(float degree) {
     else {
             turn_left(15,deltaTheta);
     }
-    float degreeToZero = degree - RPS.Heading();
+    degreeToZero = degree - RPS.Heading();
     if(degreeToZero < 0) {
         degreeToZero+=360;
     }
