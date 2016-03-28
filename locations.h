@@ -27,10 +27,13 @@ class Location
         static const float FUEL_LIGHT_Y = 61.6;
 
         static const float MID_SWITCH_X = 6.5;
-        static const float MID_SWITCH_Y = 46.1;
+        static const float MID_SWITCH_Y = 45.4;
 
         static const float START_X = 7.6;
         static const float START_Y = 8.9;
+
+        static const float DROP_OFF_X = 5.5;
+        static const float DROP_OFF_Y = 49.5;
 };
 
 #endif
