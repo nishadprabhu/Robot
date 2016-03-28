@@ -72,7 +72,7 @@ void move_forward(int percent, float inches) //using encoders
 
     right_motor.SetPercent(-15);
     left_motor.SetPercent(-15);
-    Sleep(50);
+    Sleep(75);
     //Turn off motors
     right_motor.Stop();
     left_motor.Stop();
@@ -275,7 +275,7 @@ void followLineYellow(float speed, float distance) {
         right_encoder.ResetCounts();
         left_encoder.ResetCounts();
         int start_time = TimeNow();
-        while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && TimeNow() - start_time < 3 && (frontLeftBump.Value() && frontRightBump.Value()))
+        while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && (TimeNow() - start_time < 3) && (frontLeftBump.Value() && frontRightBump.Value()))
         {
             leftValue = left.Value();
             rightValue = right.Value();
@@ -604,7 +604,7 @@ void moveToForwards(float x, float y) {
         }
     }
     faceLocation(x, y, quad);
-    move_forward(20, distanceTo(x, y));
+    move_forward(30, distanceTo(x, y));
 }
 void moveToBackwards(float x, float y) {
     int quad;
@@ -739,13 +739,15 @@ void pullSwitch(int s) {
     if(s == 2) {
         move_backwards(15, 2.5);
         moveArm(90, 25);
-        move_backwards_timed(15, 1, 1);
+        move_backwards_timed(20, 2, 1);
         moveArm(25, 90);
 
     }
     else {
+        move_forward_timed(20, 1, 1);
         moveArm(90, 25);
-        move_backwards_timed(15, 2, 1);
+        move_backwards_timed(20, 2, 1);
+        move_forward(20, 0.5);
         moveArm(25, 90);
     }
 
@@ -759,7 +761,7 @@ void pushSwitch(int s) {
     if(s == 2) {
         move_backwards(15, 4);
         moveArm(90, 25);
-        move_forward_timed(15, 1, 1);
+        move_forward_timed(15, 1.5, 1);
         moveArm(25, 90);
     }
     else {
@@ -773,7 +775,6 @@ void pushSwitch(int s) {
     Assuming robot is facing ramp, moves up the side ramp, stopping when robot is completely on top level.
 */
 void goUpSideRamp() {
-    faceDegree(0);
     move_forward(30, 5);
     followLine(30, 5);
     driveToWall(35);
@@ -844,10 +845,10 @@ void pushButton() {
     int correctButton = getLightColor();
     if(correctButton == 0) {
         LCD.WriteLine("RED");
-        move_backwards(10, 4);
+        move_backwards(10, 5);
         faceDegree(90);
         moveArm(90, 18.7);
-        move_forward_timed(30, 3, 2);
+        move_forward_timed(20, 3, 2);
         move_forward_timed(10, 100, 5);
         move_backwards_timed(30, 5, 2);
         moveArm(20, 90);
@@ -869,20 +870,9 @@ void wiggle() {
 }
 void pickUpSupplies() {
 
-    move_backwards(20, 1.5);
-    LCD.WriteLine("moving backwards");
 
     moveArm(90, 0);
     LCD.WriteLine("moving arm down");
-
-    move_forward_timed(15, 1, 1);
-    move_backwards(15, 1);
-    LCD.WriteLine("moving forwards");
-    wiggle();
-
-    move_backwards_timed(20, 0.7, 1);
-    LCD.WriteLine("moving backwards");
-
     moveArm(0, 85);
     LCD.WriteLine("Moving arm up");
 }
@@ -894,13 +884,13 @@ void dropSupplies() {
     LCD.WriteLine("moving backwards");
     moveArm(90, 15);
     LCD.WriteLine("moving arm down");
-    move_backwards_timed(25, 10, 3);
+    move_backwards_timed(25, 5, 3);
     LCD.WriteLine("moving backwards");
     LCD.WriteLine("sleep");
     arm.SetDegree(90);
     LCD.WriteLine("arm up");
-    move_forward(30, 2);
-    turn_right(20, 180);
+
+    turn_right(20, 190);
     followLineYellow(30, 5);
 
 }
@@ -925,8 +915,7 @@ void startToSupplies() {
     move_forward(30, 5);
     turn_right(30, 90);
     move_forward(30, 3);
-    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y);
-
+    moveTo(Location::SUPPLIES_X, Location::SUPPLIES_Y + 1.8);
     pickUpSupplies();
 }
 
@@ -941,7 +930,7 @@ void suppliesToTop() {
 void doButtons() {
     turn_right(20, 90);
     faceDegree(90);
-    move_forward(30, 4);
+    followLineYellow(30, 4);
     while(!detectingLight(1)) {
         LCD.WriteLine(cds1.Value());
         followLineYellow(30, 0.1);
@@ -956,26 +945,21 @@ void dropOff() {
     float angle = locationDegree(Location::DROP_OFF_X, Location::DROP_OFF_Y, 3);
     moveToForwards(Location::DROP_OFF_X, Location::DROP_OFF_Y);
     turn_right(20, angleBetween(angle, 90));
-    followLineYellow(20, 3);
+    followLineYellow(20, 5);
     //drop package
     dropSupplies();
-    followLineYellow(30, 5);
 
 }
 
 void goHome() {
-    turn_left(20, 45);
+    turn_left(20, 60);
     faceDegree(0);
     move_forward(30, distanceTo(Location::TOP_MAIN_RAMP_X - 2, RPS.Y()));
     turn_right(20, 90);
     faceDegree(270);
 
-    move_forward_timed(30, 15, 5);
-    turn_right(20, 90);
-    check_x_minus(Location::TOP_MAIN_RAMP_X-2);
-    turn_right(20,145);
-    faceDegree(35);
-    move_backwards(30, 100);
+    move_forward_timed(30, 17, 6);
+    moveToBackwards(Location::START_X, Location::START_Y);
 
 }
 
