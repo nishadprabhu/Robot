@@ -24,7 +24,7 @@
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
 //Tuning constant
-#define TUNING_CONSTANT 0.08
+#define TUNING_CONSTANT 0.085
 //PI
 # define M_PI           3.14159265358979323846
 
@@ -299,7 +299,6 @@ void followLineYellow(float speed, float distance) {
             else {
                 state = OFF_LINE;
             }
-            bumpValues();
 
             switch(state) {
                 case CENTER:
@@ -410,8 +409,19 @@ void faceDegree(float degree) {
         degreeToZero+=360;
     }
     float deltaTheta = angleBetween(headingToZero, degreeToZero);
+    if(degreeToZero > 180) {
+      turn_right(15, deltaTheta);
+    }
+    else {
+            turn_left(15,deltaTheta);
+    }
+    float degreeToZero = degree - RPS.Heading();
+    if(degreeToZero < 0) {
+        degreeToZero+=360;
+    }
+    deltaTheta = angleBetween(headingToZero, degreeToZero);
     float timeStarted = TimeNow();
-    while(deltaTheta > 0.5) {
+    while(deltaTheta > 0.5 && TimeNow() - timeStarted < 5) {
         headingToZero = 0;
         degreeToZero = degree-RPS.Heading();
         if(degreeToZero < 0) {
@@ -583,6 +593,29 @@ void faceLocation(float x, float y, int quadrant) {
 
 }
 
+void faceLocationBack(float x, float y, int quadrant) {
+    float angle = locationDegree(x, y, quadrant);
+    angle -=180;
+    if(angle < 0) {
+        angle += 360;
+    }
+    float currentHeading = RPS.Heading();
+    float deltaTheta = angleBetween(currentHeading, angle);
+    float tempAngle = angle - currentHeading;
+    if(tempAngle < 0) {
+        tempAngle += 360;
+    }
+    if(tempAngle > 180) {
+        turn_right(20, deltaTheta);
+    }
+    else {
+        turn_left(20, deltaTheta);
+    }
+    LCD.WriteLine("Facing: ");
+    LCD.Write(angle);
+    faceDegree(angle);
+
+}
 void moveToForwards(float x, float y) {
     int quad;
     float delY = y - RPS.Y();
@@ -626,12 +659,7 @@ void moveToBackwards(float x, float y) {
             quad = 3;
         }
     }
-    faceLocation(x, y, quad);
-    float head = RPS.Heading();
-    head -= 180;
-    if(head < 360) head += 360;
-    turn_right(20, 180);
-    faceDegree(head);
+    faceLocationBack(x, y, quad);
     move_backwards_timed(30, distanceTo(x, y), 5);
 }
 /** moveTo
@@ -699,7 +727,7 @@ int getLightColor() {
 */
 bool detectingLight(int cell) {
     if(cell == 1) {
-        return cds1.Value() < 1.6;
+        return cds1.Value() < 1.5;
 
     }
     else {
@@ -780,11 +808,11 @@ void goUpSideRamp() {
     driveToWall(35);
     move_backwards(30, 0.25);
     turn_left(20, 91);
-    followLine(35, 28);
+    followLine(45, 28);
     turn_left(20, 5);
     driveToWall(35);
     move_backwards(35,0.5);
-    turn_left(20, 90);
+    turn_left(30, 90);
     LCD.WriteLine("FORWARD");
 
     move_forward(30, 16);
@@ -845,8 +873,7 @@ void pushButton() {
     int correctButton = getLightColor();
     if(correctButton == 0) {
         LCD.WriteLine("RED");
-        move_backwards(10, 5);
-        faceDegree(90);
+        move_backwards(30, 5);
         moveArm(90, 18.7);
         move_forward_timed(20, 3, 2);
         move_forward_timed(10, 100, 5);
@@ -858,6 +885,7 @@ void pushButton() {
         arm.SetDegree(95);
         move_forward_timed(20, 100, 7);
         move_backwards_timed(30, 3, 2);
+        move_backwards_timed(30, 5, 2);
     }
 }
 void wiggle() {
@@ -880,7 +908,7 @@ void pickUpSupplies() {
 
 
 void dropSupplies() {
-    move_backwards(10, 1);
+    move_backwards(20, 1);
     LCD.WriteLine("moving backwards");
     moveArm(90, 15);
     LCD.WriteLine("moving arm down");
