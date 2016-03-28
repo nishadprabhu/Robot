@@ -427,7 +427,7 @@ void faceDegree(float degree) {
 
 
  }
-void distanceTo(float x, float y) {
+float distanceTo(float x, float y) {
     return sqrt((x - RPS.X()) * (x - RPS.X()) + (y - RPS.Y()) * (y - RPS.Y()));
 }
 
@@ -539,19 +539,20 @@ bool check_y_plus(float y_coordinate) //using RPS while robot is in the +y direc
 float locationDegree(float x, float y, int quadrant) {
     float delY = y - RPS.Y();
     float delX = x - RPS.X();
+    float angle;
     if(quadrant == 1) {
-        float angle = atan(delY/delX) * 180 / PI;
+        angle = atan(delY/delX) * 180 / M_PI;
     }
     else if(quadrant == 2) {
-        float angle = atan(delY/delX) * 180/PI;
+        angle = atan(delY/delX) * 180/M_PI;
         angle += 180;
     }
     else if(quadrant == 3) {
-        float angle = atan(delY/delX) * 180/PI * -1;
+        angle = atan(delY/delX) * 180/M_PI;
         angle += 180;
     }
     else {
-        float angle = atan(delY/delX) * 180/PI * -1;
+        angle = atan(delY/delX) * 180/M_PI;
         angle += 360;
     }
     return angle;
@@ -561,7 +562,7 @@ void faceLocation(float x, float y, int quadrant) {
     float angle = locationDegree(x, y, quadrant);
     float currentHeading = RPS.Heading();
     float deltaTheta = angleBetween(currentHeading, angle);
-    float tempAngle -= currentHeading;
+    float tempAngle = angle - currentHeading;
     if(tempAngle < 0) {
         tempAngle += 360;
     }
@@ -640,19 +641,19 @@ void moveTo(float x, float y) {
         faceDegree(0);
         move_forward(20, distanceTo(x, RPS.Y()));
         faceDegree(90);
-        move_forward(20, distanceTo(RPS.X(), y);
+        move_forward(20, distanceTo(RPS.X(), y));
     }
     else if(deltaX <= 0 && deltaY >= 0 ) {
 
         faceDegree(90);
-        move_forward(20, distanceTo(RPS.X(), y);
+        move_forward(20, distanceTo(RPS.X(), y));
         faceDegree(180);
         move_forward(20, distanceTo(x, RPS.Y()));
 
     }
     else if(deltaX <= 0 && deltaY <= 0 ) {
         faceDegree(270);
-        move_forward(20, distanceTo(RPS.X(), y);
+        move_forward(20, distanceTo(RPS.X(), y));
         turn_right(20, 90);
         faceDegree(180);
         move_forward(20, distanceTo(x, RPS.Y()));
@@ -662,7 +663,7 @@ void moveTo(float x, float y) {
         move_forward(20, distanceTo(x, RPS.Y()));
         turn_right(20, 90);
         faceDegree(270);
-        move_forward(20, distanceTo(RPS.X(), y);
+        move_forward(20, distanceTo(RPS.X(), y));
     }
 }
 /** waitForStart
@@ -894,7 +895,7 @@ void dropSupplies() {
     LCD.WriteLine("arm up");
     move_backwards(30, 2);
     arm.SetDegree(15);
-    move_forwards(30, 2);
+    move_forward(30, 2);
 }
 
 /** findRPSPoints
