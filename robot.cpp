@@ -19,7 +19,7 @@
 //Defining constants to convert counts to inches or degrees
 #define COUNTS_PER_INCH 33.74
 #define LEFT_COUNTS_PER_DEGREE 1.90
-#define RIGHT_COUNTS_PER_DEGREE 1.90
+#define RIGHT_COUNTS_PER_DEGREE 1.99999999999999999
 //Define thresholds for line following/start light
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
@@ -766,7 +766,7 @@ void pullSwitch(int s) {
     if(s == 2) {
         move_backwards(15, 2.5);
         arm.SetDegree(25);
-        Sleep(50);
+        Sleep(100);
         move_backwards_timed(20, 2, 1);
         //move_forward(20, 1);
         arm.SetDegree(90);
@@ -775,7 +775,7 @@ void pullSwitch(int s) {
     else {
         move_forward_timed(20, 1, 1);
         arm.SetDegree(25);
-        Sleep(50);
+        Sleep(100);
         move_backwards_timed(20, 2, 2);
         move_forward(20, 1);
         arm.SetDegree(90);
@@ -791,13 +791,13 @@ void pushSwitch(int s) {
     if(s == 2) {
         move_backwards(15, 4);
         arm.SetDegree(25);
-        Sleep(50);
+        Sleep(100);
         move_forward_timed(15, 1.5, 1);
         arm.SetDegree(90);
     }
     else {
         move_backwards(15, 2);
-        Sleep(50);
+        Sleep(100);
         arm.SetDegree(25);
         move_forward_timed(15, 2, 2);
         arm.SetDegree(90);
