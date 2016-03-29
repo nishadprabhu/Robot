@@ -617,6 +617,9 @@ void faceLocationBack(float x, float y, int quadrant) {
     LCD.WriteLine("Current Heading: ");
     float currentHeading = RPS.Heading();
     LCD.WriteLine(currentHeading);
+    while(currentHeading < 0) {
+        currentHeading = RPS.Heading();
+    }
 
     float deltaTheta = angleBetween(currentHeading, angle);
     LCD.WriteLine("delta theta: ");
@@ -763,6 +766,7 @@ void pullSwitch(int s) {
     if(s == 2) {
         move_backwards(15, 2.5);
         arm.SetDegree(25);
+        Sleep(50);
         move_backwards_timed(20, 2, 1);
         //move_forward(20, 1);
         arm.SetDegree(90);
@@ -771,6 +775,7 @@ void pullSwitch(int s) {
     else {
         move_forward_timed(20, 1, 1);
         arm.SetDegree(25);
+        Sleep(50);
         move_backwards_timed(20, 2, 2);
         move_forward(20, 1);
         arm.SetDegree(90);
@@ -786,11 +791,13 @@ void pushSwitch(int s) {
     if(s == 2) {
         move_backwards(15, 4);
         arm.SetDegree(25);
+        Sleep(50);
         move_forward_timed(15, 1.5, 1);
         arm.SetDegree(90);
     }
     else {
         move_backwards(15, 2);
+        Sleep(50);
         arm.SetDegree(25);
         move_forward_timed(15, 2, 2);
         arm.SetDegree(90);
