@@ -878,7 +878,7 @@ void pushButton() {
         move_backwards(30, 5);
         moveArm(90, 18.7);
         move_forward_timed(20, 3, 2);
-        move_forward_timed(10, 100, 5);
+        move_forward_timed(5, 100, 5);
         move_backwards_timed(30, 5, 2);
         arm.SetDegree(90);
     }
