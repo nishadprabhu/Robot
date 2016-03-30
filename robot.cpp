@@ -18,8 +18,8 @@
 #define OFF_LINE 4
 //Defining constants to convert counts to inches or degrees
 #define COUNTS_PER_INCH 33.74
-#define LEFT_COUNTS_PER_DEGREE 1.90
-#define RIGHT_COUNTS_PER_DEGREE 1.99
+#define LEFT_COUNTS_PER_DEGREE 1.85
+#define RIGHT_COUNTS_PER_DEGREE 1.90
 //Define thresholds for line following/start light
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
@@ -745,8 +745,8 @@ bool detectingLight(int cell) {
     Sets the servo thresholds.
 */
 void setServo() {
-    arm.SetMin(818);
-    arm.SetMax(2355);
+    arm.SetMin(884);
+    arm.SetMax(2235);
 }
 void moveArm(float currentDegree, float nextDegree) {
     if(currentDegree < nextDegree) {
@@ -882,7 +882,7 @@ void pushButton() {
     if(correctButton == 0) {
         LCD.WriteLine("RED");
         move_backwards(30, 5);
-        moveArm(90, 18.7);
+        moveArm(90, 28);
         move_forward_timed(20, 3, 2);
         move_forward_timed(5, 100, 5);
         move_backwards_timed(30, 2, 2);
@@ -890,10 +890,11 @@ void pushButton() {
     }
     else {
         LCD.WriteLine("BLUE");
-        arm.SetDegree(95);
+        arm.SetDegree(100);
         move_forward_timed(20, 100, 7);
         move_backwards_timed(30, 3, 2);
         move_backwards_timed(30, 2, 2);
+        arm.SetDegree(90);
     }
 }
 void wiggle() {
@@ -950,9 +951,8 @@ void startToSupplies() {
     moveToForwards(Location::SUPPLIES_X, Location::SUPPLIES_Y + 1.9);
     turn_right(30, angleBetween(RPS.Heading(), 270));
     faceDegree(270);
-    if(RPS.Y() < Location::SUPPLIES_Y + 1.8) {
-        check_y_minus(Location::SUPPLIES_Y+1.9);
-    }
+    check_y_minus(Location::SUPPLIES_Y+1.9);
+
 
     pickUpSupplies();
 }
