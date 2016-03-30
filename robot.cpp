@@ -1,4 +1,3 @@
-
 //Including FEH libraries
 #include <FEHLCD.h>
 #include <FEHIO.h>
@@ -18,13 +17,13 @@
 #define OFF_LINE 4
 //Defining constants to convert counts to inches or degrees
 #define COUNTS_PER_INCH 33.74
-#define LEFT_COUNTS_PER_DEGREE 1.85
-#define RIGHT_COUNTS_PER_DEGREE 1.90
+#define LEFT_COUNTS_PER_DEGREE 1.96
+#define RIGHT_COUNTS_PER_DEGREE 1.89
 //Define thresholds for line following/start light
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
 //Tuning constant
-#define TUNING_CONSTANT 0.09
+#define TUNING_CONSTANT 0.1
 //PI
 # define M_PI           3.14159265358979323846
 
@@ -198,6 +197,7 @@ void driveToWall(int percent) {
         if(percent < 0) {
             mp *= -1;
         }
+        bumpValues();
         right_motor.SetPercent(mp);
         if(!frontRightBump.Value()) {
             left_motor.SetPercent(percent+10);
@@ -296,6 +296,7 @@ void followLineYellow(float speed, float distance) {
             leftValue = left.Value();
             rightValue = right.Value();
             midValue = middle.Value();
+
 
             if(midValue <= ON_LINE && rightValue >= ON_LINE && leftValue>= ON_LINE) {
                 state = CENTER;
@@ -771,11 +772,11 @@ void moveArm(float currentDegree, float nextDegree) {
 void pullSwitch(int s) {
     if(s == 2) {
         move_backwards(15, 1.5);
-        moveArm(90, 25);
+        moveArm(90, 35);
 
         move_backwards_timed(20, 2, 1);
         //move_forward(20, 1);
-         moveArm(25, 90);
+         moveArm(35, 90);
 
     }
     else {
@@ -796,17 +797,17 @@ void pullSwitch(int s) {
 void pushSwitch(int s) {
     if(s == 2) {
         move_backwards(15, 4);
-         moveArm(90, 25);
+         moveArm(90, 35);
 
         move_forward_timed(15, 1.5, 1);
-         moveArm(25, 90);
+         moveArm(35, 90);
     }
     else {
         move_backwards(15, 2);
 
-         moveArm(90, 25);
+         moveArm(90, 35);
         move_forward_timed(15, 2, 2);
-        moveArm(25, 90);
+        moveArm(35, 90);
     }
 }
 /** goUpSideRamp
@@ -882,19 +883,19 @@ void pushButton() {
     if(correctButton == 0) {
         LCD.WriteLine("RED");
         move_backwards(30, 5);
-        moveArm(90, 28);
+        moveArm(100, 30);
         move_forward_timed(20, 3, 2);
         move_forward_timed(5, 100, 5);
-        move_backwards_timed(30, 2, 2);
-        arm.SetDegree(90);
+        move_backwards_timed(30, 3, 2);
+        arm.SetDegree(100);
     }
     else {
         LCD.WriteLine("BLUE");
         arm.SetDegree(100);
         move_forward_timed(20, 100, 7);
         move_backwards_timed(30, 3, 2);
-        move_backwards_timed(30, 2, 2);
-        arm.SetDegree(90);
+        move_backwards_timed(30, 3, 2);
+        arm.SetDegree(100);
     }
 }
 void wiggle() {
@@ -908,23 +909,23 @@ void wiggle() {
 void pickUpSupplies() {
 
 
-    arm.SetDegree(0);
+    moveArm(100, 17);
     LCD.WriteLine("moving arm down");
-    moveArm(0, 85);
+    moveArm(17, 100);
     LCD.WriteLine("Moving arm up");
 }
 
 
 
 void dropSupplies() {
-    move_backwards(0, 1);
+    move_backwards(10, 1);
     LCD.WriteLine("moving backwards");
-    moveArm(90, 15);
+    moveArm(100, 25);
     LCD.WriteLine("moving arm down");
     move_backwards_timed(25, 5, 3);
     LCD.WriteLine("moving backwards");
     LCD.WriteLine("sleep");
-    arm.SetDegree(90);
+    arm.SetDegree(100);
     LCD.WriteLine("arm up");
 
     pivot_right( 20, 180);
@@ -947,7 +948,7 @@ void findRPSPoints() {
 }
 void startToSupplies() {
     setServo();
-    arm.SetDegree(90);
+    arm.SetDegree(100);
     moveToForwards(Location::SUPPLIES_X, Location::SUPPLIES_Y + 1.9);
     turn_right(30, angleBetween(RPS.Heading(), 270));
     faceDegree(270);
@@ -959,7 +960,7 @@ void startToSupplies() {
 
 void suppliesToTop() {
     faceDegree(270);
-    move_backwards(35, distanceTo(RPS.X(), Location::BOTTOM_SIDE_RAMP_Y)) ;
+    move_backwards(35, distanceTo(RPS.X(), Location::BOTTOM_SIDE_RAMP_Y + 0.5)) ;
     turn_left(30,90);
     goUpSideRamp();
 
@@ -981,8 +982,8 @@ void doButtons() {
 }
 void dropOff() {
     float angle = locationDegree(Location::DROP_OFF_X, Location::DROP_OFF_Y, 3);
-    moveToBackwards(Location::DROP_OFF_X + 0.2, Location::DROP_OFF_Y);
-    turn_left(30, angleBetween(angle-180, 90));
+    moveToForwards(Location::DROP_OFF_X + 0.2, Location::DROP_OFF_Y);
+    turn_right(30, angleBetween(angle, 90));
     followLineYellow(20, 5);
     //drop package
     dropSupplies();
@@ -1019,10 +1020,9 @@ void goGoGo() {
 int main(void)
 {
     setServo();
-    arm.SetDegree(90);
+    arm.SetDegree(100);
     waitForStart();
     goGoGo();
     return 0;
 
 }
-
