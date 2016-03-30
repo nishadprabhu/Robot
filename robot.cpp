@@ -19,7 +19,7 @@
 //Defining constants to convert counts to inches or degrees
 #define COUNTS_PER_INCH 33.74
 #define LEFT_COUNTS_PER_DEGREE 1.90
-#define RIGHT_COUNTS_PER_DEGREE 1.99999999999999999
+#define RIGHT_COUNTS_PER_DEGREE 1.99
 //Define thresholds for line following/start light
 #define START_LIGHT_ON 1.5
 #define BLUE_LIGHT_ON 1
@@ -597,10 +597,10 @@ void faceLocation(float x, float y, int quadrant) {
         tempAngle += 360;
     }
     if(tempAngle > 180) {
-        turn_right(20, deltaTheta);
+        turn_right(30, deltaTheta);
     }
     else {
-        turn_left(20, deltaTheta);
+        turn_left(30, deltaTheta);
     }
     LCD.WriteLine("Facing: ");
     LCD.Write(angle);
@@ -629,10 +629,10 @@ void faceLocationBack(float x, float y, int quadrant) {
         tempAngle += 360;
     }
     if(tempAngle > 180) {
-        turn_right(20, deltaTheta);
+        turn_right(30, deltaTheta);
     }
     else {
-        turn_left(20, deltaTheta);
+        turn_left(30, deltaTheta);
     }
     LCD.WriteLine("Facing: ");
     LCD.Write(angle);
@@ -682,7 +682,7 @@ void moveToBackwards(float x, float y) {
         }
     }
     faceLocationBack(x, y, quad);
-    move_backwards_timed(30, distanceTo(x, y), 5);
+    move_backwards_timed(35, distanceTo(x, y), 5);
 }
 /** moveTo
     Moves the robot to a certain coordinate.
@@ -726,7 +726,13 @@ int getLightColor() {
 */
 bool detectingLight(int cell) {
     if(cell == 1) {
-        return cds1.Value() < 1.5;
+        if(RPS.CurrentCourse() == 'a' || RPS.CurrentCourse() == 'A') {
+            return cds1.Value() < 1.7;
+        }
+        else {
+            return cds1.Value() < 1.5;
+        }
+
 
     }
     else {
@@ -747,14 +753,14 @@ void moveArm(float currentDegree, float nextDegree) {
         while(currentDegree < nextDegree) {
             arm.SetDegree(currentDegree);
             currentDegree++;
-            Sleep(20);
+            Sleep(15);
         }
     }
     else {
         while(currentDegree > nextDegree) {
             arm.SetDegree(currentDegree);
             currentDegree--;
-            Sleep(20);
+            Sleep(15);
         }
     }
 }
@@ -764,21 +770,21 @@ void moveArm(float currentDegree, float nextDegree) {
 */
 void pullSwitch(int s) {
     if(s == 2) {
-        move_backwards(15, 2.5);
-        arm.SetDegree(25);
-        Sleep(100);
+        move_backwards(15, 1.5);
+        moveArm(90, 25);
+
         move_backwards_timed(20, 2, 1);
         //move_forward(20, 1);
-        arm.SetDegree(90);
+         moveArm(25, 90);
 
     }
     else {
         move_forward_timed(20, 1, 1);
-        arm.SetDegree(25);
-        Sleep(100);
+         moveArm(90, 25);
+
         move_backwards_timed(20, 2, 2);
         move_forward(20, 1);
-        arm.SetDegree(90);
+         moveArm(25, 90);
     }
 
 
@@ -790,17 +796,17 @@ void pullSwitch(int s) {
 void pushSwitch(int s) {
     if(s == 2) {
         move_backwards(15, 4);
-        arm.SetDegree(25);
-        Sleep(100);
+         moveArm(90, 25);
+
         move_forward_timed(15, 1.5, 1);
-        arm.SetDegree(90);
+         moveArm(25, 90);
     }
     else {
         move_backwards(15, 2);
-        Sleep(100);
-        arm.SetDegree(25);
+
+         moveArm(90, 25);
         move_forward_timed(15, 2, 2);
-        arm.SetDegree(90);
+        moveArm(25, 90);
     }
 }
 /** goUpSideRamp
@@ -811,7 +817,7 @@ void goUpSideRamp() {
     followLine(30, 5);
     driveToWall(35);
     move_backwards(30, 0.25);
-    turn_left(20, 91);
+    turn_left(30, 90);
     followLine(45, 28);
     driveToWall(20);
     move_backwards(35,0.5);
@@ -879,7 +885,7 @@ void pushButton() {
         moveArm(90, 18.7);
         move_forward_timed(20, 3, 2);
         move_forward_timed(5, 100, 5);
-        move_backwards_timed(30, 5, 2);
+        move_backwards_timed(30, 2, 2);
         arm.SetDegree(90);
     }
     else {
@@ -887,7 +893,7 @@ void pushButton() {
         arm.SetDegree(95);
         move_forward_timed(20, 100, 7);
         move_backwards_timed(30, 3, 2);
-        move_backwards_timed(30, 5, 2);
+        move_backwards_timed(30, 2, 2);
     }
 }
 void wiggle() {
@@ -910,7 +916,7 @@ void pickUpSupplies() {
 
 
 void dropSupplies() {
-    move_backwards(20, 1);
+    move_backwards(0, 1);
     LCD.WriteLine("moving backwards");
     moveArm(90, 15);
     LCD.WriteLine("moving arm down");
@@ -942,7 +948,7 @@ void startToSupplies() {
     setServo();
     arm.SetDegree(90);
     moveToForwards(Location::SUPPLIES_X, Location::SUPPLIES_Y + 1.9);
-    turn_right(20, angleBetween(RPS.Heading(), 270));
+    turn_right(30, angleBetween(RPS.Heading(), 270));
     faceDegree(270);
     if(RPS.Y() < Location::SUPPLIES_Y + 1.8) {
         check_y_minus(Location::SUPPLIES_Y+1.9);
@@ -953,14 +959,14 @@ void startToSupplies() {
 
 void suppliesToTop() {
     faceDegree(270);
-    move_backwards(30, distanceTo(RPS.X(), Location::BOTTOM_SIDE_RAMP_Y)) ;
+    move_backwards(35, distanceTo(RPS.X(), Location::BOTTOM_SIDE_RAMP_Y)) ;
     turn_left(30,90);
     goUpSideRamp();
 
 }
 
 void doButtons() {
-    turn_right(20, 90);
+    turn_right(30, 90);
     faceDegree(90);
     followLineYellow(45, 4);
     while(!detectingLight(1)) {
@@ -975,8 +981,8 @@ void doButtons() {
 }
 void dropOff() {
     float angle = locationDegree(Location::DROP_OFF_X, Location::DROP_OFF_Y, 3);
-    moveToForwards(Location::DROP_OFF_X + 0.2, Location::DROP_OFF_Y);
-    turn_right(20, angleBetween(angle, 90));
+    moveToBackwards(Location::DROP_OFF_X + 0.2, Location::DROP_OFF_Y);
+    turn_left(30, angleBetween(angle-180, 90));
     followLineYellow(20, 5);
     //drop package
     dropSupplies();
@@ -987,8 +993,8 @@ void goHome() {
     turn_left(20, 60);
     faceDegree(0);
     move_forward(30, distanceTo(Location::TOP_MAIN_RAMP_X - 2, RPS.Y()));
-    check_x_plus(Location::TOP_MAIN_RAMP_X-2);
-    turn_right(20, 90);
+    check_x_plus(Location::TOP_MAIN_RAMP_X-1);
+    turn_right(30, 90);
     faceDegree(270);
 
     move_forward_timed(30, 17, 6);
@@ -1011,12 +1017,11 @@ void goGoGo() {
 
 
 int main(void)
-{   setServo();
+{
+    setServo();
     arm.SetDegree(90);
     waitForStart();
     goGoGo();
-
-
     return 0;
 
 }
