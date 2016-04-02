@@ -68,6 +68,7 @@ void setRPSCoords() {
     SUPPLIES_Y = RPS.Y();\
     LCD.Clear();
     LCD.WriteLine("DROP OFF");
+    Sleep(1.0);
     while(!LCD.Touch(&x, &y)) {
         LCD.WriteLine(RPS.X());
         LCD.WriteLine(RPS.Y());
@@ -854,7 +855,7 @@ void goUpSideRamp() {
     turn_left(30, 90);
     LCD.WriteLine("FORWARD");
 
-    move_forward(SPEED, 14);
+    move_forward(SPEED, 14.75);
     LCD.WriteLine("STOP");
     right_motor.Stop();
     left_motor.Stop();
@@ -911,7 +912,7 @@ void completeSwitches() {
 */
 void pushButton() {
     int correctButton = getLightColor();
-    if(correctButton == 0) {
+    if(correctButton == 1) {
         LCD.WriteLine("RED");
         move_backwards(SPEED, 5);
         moveArm(100, 30);
