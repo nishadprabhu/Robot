@@ -912,9 +912,9 @@ void completeSwitches() {
 */
 void pushButton() {
     int correctButton = getLightColor();
-    if(correctButton == 1) {
+    if(correctButton == 0) {
         LCD.WriteLine("RED");
-        move_backwards(SPEED, 5);
+        move_backwards(SPEED, 4);
         moveArm(100, 30);
         move_forward_timed(20, 3, 2);
         move_forward_timed(5, 100, 5);
