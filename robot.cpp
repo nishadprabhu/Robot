@@ -46,10 +46,37 @@ AnalogInputPin cds2(FEHIO::P3_1);
 
 DigitalInputPin frontLeftBump(FEHIO::P2_0);
 DigitalInputPin frontRightBump(FEHIO::P2_1);
+
+float SUPPLIES_X = 29.35;
+float SUPPLIES_Y = 12.3;
+float DROP_OFF_X = 5.5;
+float DROP_OFF_Y = 49.5;
 void bumpValues() {
     LCD.WriteLine(frontLeftBump.Value());
     LCD.WriteLine(frontRightBump.Value());
 }
+void setRPSCoords() {
+    LCD.WriteLine("SUPPLIES");
+    float x, y;
+    while(!LCD.Touch(&x, &y)) {
+        LCD.WriteLine(RPS.X());
+        LCD.WriteLine(RPS.Y());
+        Sleep(50);
+        LCD.Clear();
+    }
+    SUPPLIES_X = RPS.X();
+    SUPPLIES_Y = RPS.Y();\
+    LCD.Clear();
+    LCD.WriteLine("DROP OFF");
+    while(!LCD.Touch(&x, &y)) {
+        LCD.WriteLine(RPS.X());
+        LCD.WriteLine(RPS.Y());
+        Sleep(50);
+        LCD.Clear();
+    }
+    DROP_OFF_X = RPS.X();
+}
+
 
 /** move_forward
     Moves the robot forward
@@ -293,7 +320,7 @@ void followLineYellow(float speed, float distance) {
         right_encoder.ResetCounts();
         left_encoder.ResetCounts();
         int start_time = TimeNow();
-        while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && (TimeNow() - start_time < 5) && (frontLeftBump.Value() || frontRightBump.Value()))
+        while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && (TimeNow() - start_time < 5) && (frontLeftBump.Value() && frontRightBump.Value()))
         {
             leftValue = left.Value();
             rightValue = right.Value();
@@ -709,6 +736,7 @@ void moveTo(float x, float y) {
 void waitForStart() {
     RPS.InitializeTouchMenu();
     LCD.Clear();
+    setRPSCoords();
     while(cds2.Value() > 0.8);
 }
 /** getLightColor
@@ -716,11 +744,11 @@ void waitForStart() {
     @return 1 if light is blue, 2 if light is red
 */
 int getLightColor() {
-    if(cds1.Value() > BLUE_LIGHT_ON) {
-        return 1;
+    if(cds1.Value() < BLUE_LIGHT_ON) {
+        return 0;
     }
     else {
-        return 0;
+        return 1;
     }
 }
 /** detectingLight
@@ -826,7 +854,7 @@ void goUpSideRamp() {
     turn_left(30, 90);
     LCD.WriteLine("FORWARD");
 
-    move_forward(SPEED, 16);
+    move_forward(SPEED, 14);
     LCD.WriteLine("STOP");
     right_motor.Stop();
     left_motor.Stop();
@@ -952,10 +980,10 @@ void findRPSPoints() {
 void startToSupplies() {
     setServo();
     arm.SetDegree(100);
-    moveToForwards(Location::SUPPLIES_X, Location::SUPPLIES_Y + 1.8);
+    moveToForwards(SUPPLIES_X, SUPPLIES_Y + 1.8);
     turn_right(30, angleBetween(RPS.Heading(), 270) - 3);
     faceDegree(270);
-    check_y_minus(Location::SUPPLIES_Y+1.8);
+    check_y_minus(SUPPLIES_Y+1.8);
 
 
     pickUpSupplies();
@@ -974,7 +1002,7 @@ void doButtons() {
     followLineYellow(40, 4);
     while(!detectingLight(1)) {
         LCD.WriteLine(cds1.Value());
-        followLineYellow(SPEED-8, 0.1);
+        followLineYellow(25, 0.1);
     }
     if(RPS.Heading() >= 0) {
         faceDegree(90);
@@ -991,9 +1019,9 @@ void dropOff() {
     if(RPS.Heading() < 0) {
         move_backwards(30, 1);
     }
-    float angle = locationDegree(Location::DROP_OFF_X, Location::DROP_OFF_Y, 3);
+    float angle = locationDegree(DROP_OFF_X, DROP_OFF_Y, 3);
     angle -= 180;
-    moveToBackwards(Location::DROP_OFF_X - 0.25, Location::DROP_OFF_Y );
+    moveToBackwards(DROP_OFF_X, DROP_OFF_Y );
     turn_left(30, angleBetween(angle, 90));
     followLineYellow(30, 10);
     //drop package
@@ -1009,7 +1037,7 @@ void goHome() {
     turn_right(30, 90);
     faceDegree(270);
 
-    move_forward_timed(SPEED, 15, 3);
+    move_forward_timed(35, 15, 3);
     Sleep(50);
     if(RPS.Heading() >= 0) {
         faceLocationBack(Location::START_X, Location::START_Y, 3);
