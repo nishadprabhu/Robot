@@ -21,7 +21,7 @@
 #define RIGHT_COUNTS_PER_DEGREE 1.88
 //Define thresholds for line following/start light
 #define START_LIGHT_ON 1.5
-#define BLUE_LIGHT_ON 0.5
+#define BLUE_LIGHT_ON 0.8
 //Tuning constant
 #define TUNING_CONSTANT 0.1
 //PI
@@ -132,7 +132,7 @@ void move_forward_timed(int percent, float inches, double time) //using encoders
     //While the average of the left and right encoder are less than counts,
     //keep running motors
     int start_time = TimeNow();
-    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && TimeNow() - start_time < time) {
+    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts && TimeNow() - start_time < time && (frontLeftBump.Value() && frontRightBump.Value())) {
         mp = TUNING_CONSTANT*(left_encoder.Counts()-right_encoder.Counts())+(percent);
         right_motor.SetPercent(mp);
     }
@@ -819,7 +819,7 @@ void moveArm(float currentDegree, float nextDegree) {
 */
 void pullSwitch(int s) {
     if(s == 2) {
-        move_backwards(15, 1.5);
+        move_backwards(25, 1.5);
         moveArm(100, 35);
 
         move_backwards_timed(20, 2, 2);
@@ -921,7 +921,6 @@ void flipSwitches(int red, int white, int blue) {
     moves to switches and flips them
 */
 void completeSwitches() {
-
     flipSwitches(RPS.RedSwitchDirection(), RPS.WhiteSwitchDirection(), RPS.BlueSwitchDirection());
 }
 /** pushButton
@@ -947,18 +946,9 @@ void pushButton() {
         arm.SetDegree(100);
     }
 }
-void wiggle() {
-    turn_right(15, 5);
-    turn_left(15, 5);
-    turn_right(15, 5);
-    turn_left(15, 5);
-    turn_right(15, 5);
-    turn_left(15, 5);
-}
+
 void pickUpSupplies() {
-
-
-    moveArm(100, 15);
+   moveArm(100, 15);
     LCD.WriteLine("moving arm down");
     moveArm(15, 100);
     LCD.WriteLine("Moving arm up");
@@ -967,7 +957,7 @@ void pickUpSupplies() {
 
 
 void dropSupplies() {
-    move_backwards(10, 1);
+    move_backwards(25, 1);
     LCD.WriteLine("moving backwards");
     moveArm(100, 25);
     LCD.WriteLine("moving arm down");
@@ -1002,8 +992,6 @@ void startToSupplies() {
     turn_right(30, angleBetween(RPS.Heading(), 270) - 1);
     faceDegree(270);
     check_y_minus(SUPPLIES_Y+1.2);
-
-
     pickUpSupplies();
 }
 
@@ -1024,7 +1012,13 @@ void goToLight() {
 
 void doButtons() {
     while(RPS.X() < 0);
-    turn_right(30, 86);
+    if(RPS.Heading() >= 0) {
+        turn_right(30, angleBetween(RPS.Heading(), 90));
+    }
+    else {
+       turn_right(30, 86); 
+    }
+    
 
 //    if(RPS.CurrentCourse() == 'a' || RPS.CurrentCourse() == 'A') {
 //        moveToForwards(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y + 0.35);
