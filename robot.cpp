@@ -1002,12 +1002,7 @@ void suppliesToTop() {
 
 }
 void goToLight() {
-    followLineYellow(40, 4);
-    while(!detectingLight(1)) {
-        LCD.WriteLine(cds1.Value());
-        followLineYellow(30, 0.1);
-    }
-    LCD.WriteLine(cds1.Value());
+    followLineYellow(30, distanceTo(Location::FUEL_LIGHT_X, Location::FUEL_LIGHT_Y);
 }
 
 void doButtons() {
