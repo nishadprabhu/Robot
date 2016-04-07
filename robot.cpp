@@ -953,13 +953,13 @@ void pushSwitch(int s) {
         move_backwards(30, 4);
          moveArm(100, 35);
 
-        move_forward_timed(30, 3, .5);
+        move_forward_timed(30, 3, .25);
          moveArm(35, 100);
     }
     else {
         move_backwards(30 , 1.5);
         moveArm(100, 35);
-        move_forward_timed(30, 3, .5);
+        move_forward_timed(30, 3, .25 );
         moveArm(35, 100);
     }
 }
@@ -992,7 +992,7 @@ void goUpSideRamp() {
 */
 void flipSwitches(int red, int white, int blue) {
     //Starting at middle switch
-    driveToWall(SPEED);
+    followLineYellow(SPEED, 3 );
     if(white == 1) {
         pushSwitch(2);
     }
@@ -1110,7 +1110,7 @@ void startToSupplies() {
     faceDegree(270);
     check_y_minus(SUPPLIES_Y+1.2);
 
- 
+
     pickUpSupplies();
 }
 
@@ -1135,16 +1135,6 @@ void goToLight() {
 //        followLineYellow(25, distanceTo(RPS.X(), Location::FUEL_LIGHT_Y) - 0.3);
 //    }
     double time = TimeNow();
-
-    move_forward(30, 3);
-    while(!on_line()) {
-        if(RPS.X() > Location::FUEL_LIGHT_X) {
-            turn_left(30, 5);
-        }
-        else {
-            turn_right(30, 5);
-        }
-    }
     while(!detectingLight(1)) {
             followLineYellow(25, 0.1);
     }
@@ -1168,6 +1158,7 @@ void goToLight() {
 
 void doButtons() {
     while(RPS.X() < 0);
+    check_x_minus(Location::FUEL_LIGHT_X);
     if(RPS.Heading() >= 0) {
         turn_right(30, angleBetween(RPS.Heading(),90));
     }
@@ -1235,7 +1226,7 @@ void goHome() {
 //        move_backwards(50, 17);
 //        faceLocationBack(Location::START_X, Location::START_Y, 3);
 //        move_backwards(50, 100 );
-        moveToBackwards(START_X, START_Y);
+        moveToBackwards(START_X, START_Y+3);
         faceLocationBack(START_X, START_Y, 3);
         move_backwards(50, 100);
 
