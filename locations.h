@@ -33,7 +33,7 @@ class Location
         static const float START_Y = 8.9;
 
         static const float DROP_OFF_X = 5.5;
-        static const float DROP_OFF_Y = 49.5;
+        static const float DROP_OFF_Y = 48;
 };
 
 #endif
