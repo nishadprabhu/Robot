@@ -358,7 +358,7 @@ void followLineYellowSquare(float speed, float distance) {
             leftValue = left.Value();
             rightValue = right.Value();
             midValue = middle.Value();
-
+            bumpValues();
 
             if(midValue <= ON_LINE && rightValue >= ON_LINE && leftValue>= ON_LINE) {
                 state = CENTER;
@@ -1165,7 +1165,7 @@ void doButtons() {
     else {
         turn_right(30, 85);
     }
-    //faceDegree(90);
+    faceDegree(90);
 
     goToLight();
 
